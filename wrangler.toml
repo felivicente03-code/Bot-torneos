@@ -1,8 +1,6 @@
 name = "workerff"
-main = "worker.js"
-compatibility_date = "2026-03-08"
+type = "javascript"
 
-[[d1_databases]]
-binding = "MY_DB"
-database_name = "nombre_de_tu_D1"
-database_id = "ID_de_tu_D1"
+account_id = "<TU_ACCOUNT_ID_DE_CLOUDFLARE>"
+workers_dev = true
+compatibility_date = "2026-03-08"
