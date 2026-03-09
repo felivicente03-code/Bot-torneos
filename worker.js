@@ -1,11 +1,30 @@
 export default {
   async fetch(request, env) {
 
-    const result = await env.torneos_db.prepare(
-      "SELECT 1 as prueba"
-    ).all();
+    if (request.method === "POST") {
 
-    return new Response(JSON.stringify(result));
+      const data = await request.json();
 
+      if (data.message) {
+
+        const chat_id = data.message.chat.id;
+        const text = data.message.text;
+
+        if (text === "/torneo") {
+
+          await env.torneos_db.prepare(
+            "INSERT INTO torneos (nombre, fecha, jugadores) VALUES (?, ?, ?)"
+          )
+          .bind("Torneo automático", new Date().toISOString(), 0)
+          .run();
+
+        }
+
+      }
+
+      return new Response("ok");
+    }
+
+    return new Response("Worker activo");
   }
 };
