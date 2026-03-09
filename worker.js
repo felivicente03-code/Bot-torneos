@@ -1,8 +1,11 @@
 export default {
   async fetch(request, env) {
-    const result = await env.MY_DB.prepare(
-      "SELECT Id, CustomerName, OrderDate FROM [Order] ORDER BY ShippedDate DESC LIMIT 100"
-    ).run();
+
+    const result = await env.torneos_db.prepare(
+      "SELECT 1 as prueba"
+    ).all();
+
     return new Response(JSON.stringify(result));
+
   }
 };
