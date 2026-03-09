@@ -105,8 +105,99 @@ if (text && text.startsWith("/borrartorneo")) {
       text: mensaje
     })
   });
-}
 
+}
+// Flujo de registro de jugadores
+const estadoJugador = await env.estados_db.prepare(
+  "SELECT * FROM estados WHERE id_telegram = ?"
+).bind(user_id).first();
+
+if (estadoJugador) {
+  const torneo = estadoJugador.torneo;
+
+  switch (estadoJugador.estado) {
+    case "ESPERANDO_ID_JUEGO":
+      await env.jugadores_db.prepare(
+        "INSERT INTO jugadores (id_telegram, torneo, id_juego) VALUES (?, ?, ?)"
+      ).bind(user_id, torneo, text).run();
+
+      await env.estados_db.prepare(
+        "UPDATE estados SET estado = ? WHERE id_telegram = ?"
+      ).bind("ESPERANDO_NICK", user_id).run();
+
+      await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id, text: "✏️ Ahora, ¿cuál es tu nick en el juego?" })
+      });
+      break;
+
+    case "ESPERANDO_NICK":
+      await env.jugadores_db.prepare(
+        "UPDATE jugadores SET nick = ? WHERE id_telegram = ? AND torneo = ?"
+      ).bind(text, user_id, torneo).run();
+
+      await env.estados_db.prepare(
+        "UPDATE estados SET estado = ? WHERE id_telegram = ?"
+      ).bind("ESPERANDO_APELLIDO", user_id).run();
+
+      await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id, text: "✏️ Ahora, tu apellido:" })
+      });
+      break;
+
+    case "ESPERANDO_APELLIDO":
+      await env.jugadores_db.prepare(
+        "UPDATE jugadores SET apellido = ? WHERE id_telegram = ? AND torneo = ?"
+      ).bind(text, user_id, torneo).run();
+
+      await env.estados_db.prepare(
+        "UPDATE estados SET estado = ? WHERE id_telegram = ?"
+      ).bind("ESPERANDO_NOMBRE", user_id).run();
+
+      await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id, text: "✏️ Ahora, tu nombre:" })
+      });
+      break;
+
+    case "ESPERANDO_NOMBRE":
+      await env.jugadores_db.prepare(
+        "UPDATE jugadores SET nombre = ? WHERE id_telegram = ? AND torneo = ?"
+      ).bind(text, user_id, torneo).run();
+
+      await env.estados_db.prepare(
+        "UPDATE estados SET estado = ? WHERE id_telegram = ?"
+      ).bind("ESPERANDO_PAIS", user_id).run();
+
+      await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id, text: "🌎 Por último, tu país:" })
+      });
+      break;
+
+    case "ESPERANDO_PAIS":
+      await env.jugadores_db.prepare(
+        "UPDATE jugadores SET pais = ? WHERE id_telegram = ? AND torneo = ?"
+      ).bind(text, user_id, torneo).run();
+
+      // Jugador completó registro
+      await env.estados_db.prepare(
+        "DELETE FROM estados WHERE id_telegram = ?"
+      ).bind(user_id).run();
+
+      await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id, text: "✅ Registro completo. ¡Buena suerte en el torneo!" })
+      });
+      break;
+  }
+}
       }
 if (data.callback_query) {
   const chat_id = data.callback_query.message.chat.id;
@@ -151,107 +242,7 @@ if (data.callback_query) {
     // Devuelvo ok inmediatamente
     return new Response("ok");
 }
-if (data.message) {
-  const chat_id = data.message.chat.id;
-  const text = data.message.text;
-  const user_id = data.message.from.id;
 
-  // Buscar si el jugador tiene un estado activo
-  const estadoJugador = await env.estados_db.prepare(
-    "SELECT * FROM estados WHERE id_telegram = ?"
-  ).bind(user_id).first();
-
-  if (estadoJugador) {
-    const torneo = estadoJugador.torneo;
-
-    switch (estadoJugador.estado) {
-      case "ESPERANDO_ID_JUEGO":
-        // Guardamos ID en jugadores
-        await env.jugadores_db.prepare(
-          "INSERT INTO jugadores (id_telegram, torneo, id_juego) VALUES (?, ?, ?)"
-        ).bind(user_id, torneo, text).run();
-
-        // Actualizamos estado a siguiente pregunta
-        await env.estados_db.prepare(
-          "UPDATE estados SET estado = ? WHERE id_telegram = ?"
-        ).bind("ESPERANDO_NICK", user_id).run();
-
-        await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id, text: "✏️ Ahora, ¿cuál es tu nick en el juego?" })
-        });
-        break;
-
-      case "ESPERANDO_NICK":
-        await env.jugadores_db.prepare(
-          "UPDATE jugadores SET nick = ? WHERE id_telegram = ? AND torneo = ?"
-        ).bind(text, user_id, torneo).run();
-
-        await env.estados_db.prepare(
-          "UPDATE estados SET estado = ? WHERE id_telegram = ?"
-        ).bind("ESPERANDO_APELLIDO", user_id).run();
-
-        await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id, text: "✏️ Ahora, tu apellido:" })
-        });
-        break;
-
-      case "ESPERANDO_APELLIDO":
-        await env.jugadores_db.prepare(
-          "UPDATE jugadores SET apellido = ? WHERE id_telegram = ? AND torneo = ?"
-        ).bind(text, user_id, torneo).run();
-
-        await env.estados_db.prepare(
-          "UPDATE estados SET estado = ? WHERE id_telegram = ?"
-        ).bind("ESPERANDO_NOMBRE", user_id).run();
-
-        await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id, text: "✏️ Ahora, tu nombre:" })
-        });
-        break;
-
-      case "ESPERANDO_NOMBRE":
-        await env.jugadores_db.prepare(
-          "UPDATE jugadores SET nombre = ? WHERE id_telegram = ? AND torneo = ?"
-        ).bind(text, user_id, torneo).run();
-
-        await env.estados_db.prepare(
-          "UPDATE estados SET estado = ? WHERE id_telegram = ?"
-        ).bind("ESPERANDO_PAIS", user_id).run();
-
-        await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id, text: "🌎 Por último, tu país:" })
-        });
-        break;
-
-      case "ESPERANDO_PAIS":
-        await env.jugadores_db.prepare(
-          "UPDATE jugadores SET pais = ? WHERE id_telegram = ? AND torneo = ?"
-        ).bind(text, user_id, torneo).run();
-
-        // Jugador completó registro
-        await env.estados_db.prepare(
-          "DELETE FROM estados WHERE id_telegram = ?"
-        ).bind(user_id).run();
-
-        await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id, text: "✅ Registro completo. ¡Buena suerte en el torneo!" })
-        });
-        break;
-    }
-
-    return new Response("ok");
-  }
-}
       return new Response("ok");
     }
 
