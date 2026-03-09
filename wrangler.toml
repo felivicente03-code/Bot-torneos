@@ -1,1 +1,8 @@
+name = "workerff"
+main = "worker.js"
+compatibility_date = "2026-03-08"
 
+[[d1_databases]]
+binding = "MY_DB"
+database_name = "nombre_de_tu_D1"
+database_id = "ID_de_tu_D1"
