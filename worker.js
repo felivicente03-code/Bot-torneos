@@ -117,6 +117,13 @@ if (data.callback_query) {
   if (callback_data.startsWith("torneo_")) {
     const torneoId = Number(callback_data.replace("torneo_", ""));
 
+  await fetch(`https://api.telegram.org/bot${TOKEN}/answerCallbackQuery`, {
+  method: "POST",
+  headers: {"Content-Type": "application/json"},
+  body: JSON.stringify({
+    callback_query_id: data.callback_query.id
+  })
+});
     // 1️⃣ Mandar mensaje de confirmación
      const torneo = await env.torneos_db.prepare(
       "SELECT nombre FROM torneos WHERE id = ?"
