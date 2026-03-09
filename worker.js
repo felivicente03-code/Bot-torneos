@@ -106,6 +106,8 @@ if (text && text.startsWith("/borrartorneo")) {
     })
   });
 }
+
+      }
 if (data.callback_query) {
   const chat_id = data.callback_query.message.chat.id;
   const user_id = data.callback_query.from.id;
@@ -113,15 +115,21 @@ if (data.callback_query) {
 
   // 👇 Cuando toca un botón de torneo
   if (callback_data.startsWith("torneo_")) {
-    const torneoId = callback_data.replace("torneo_", "");
+    const torneoId = Number(callback_data.replace("torneo_", ""));
 
     // 1️⃣ Mandar mensaje de confirmación
+     const torneo = await env.torneos_db.prepare(
+      "SELECT nombre FROM torneos WHERE id = ?"
+    ).bind(torneoId).first();
+
+const nombreTorneo = torneo?.nombre || torneoId;
     await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         chat_id: chat_id,
-        text: `🏆 Vas a jugar en el torneo por "${torneoId}" ✅`
+        text: `🏆 Vas a jugar en el torneo "${nombreTorneo}" ✅`
+        
       })
     });
 
@@ -137,12 +145,10 @@ if (data.callback_query) {
 
     // 3️⃣ Guardar en ESTADOS que este jugador está esperando ingresar su ID
     await env.estados_db.prepare(
-      "INSERT INTO estados (id_telegram, estado, torneo) VALUES (?, ?, ?)"
-    ).bind(user_id, "ESPERANDO_ID_JUEGO", torneoId).run();
+  "INSERT INTO estados (id_telegram, estado, torneo) VALUES (?, ?, ?)"
+).bind(user_id, "ESPERANDO_ID_JUEGO", nombreTorneo).run();
   }
 }
-      }
-
       return new Response("ok");
     }
 
