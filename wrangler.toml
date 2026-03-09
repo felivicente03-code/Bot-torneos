@@ -1,12 +1,27 @@
+# Nombre del Worker
 name = "workerff"
-main = "worker.js"
-compatibility_date = "2026-03-08"
 
-[vars]
-PRUEBA = "123"
+# Archivo principal de tu Worker
+main = "worker.js"  # Cambialo a worker.ts si estás usando TypeScript
 
-[d1_databases]
-# ejemplo si tu D1 binding se llama MY_DB
-binding = "torneos_db"
-database_name = "prod-d1-tutorial"
-database_id = "a01f8789-4f1d-4b62-8eae-9f2a84b9d720"
+# Fecha de compatibilidad de Cloudflare (mantener actualizada)
+compatibility_date = "2026-03-04"
+
+# Base de datos D1 vinculada
+d1_databases = [
+  { 
+    binding = "torneos_db",                 # Nombre de la variable que usarás en tu Worker
+    database_name = "prod-d1-tutorial",     # Nombre de la base de datos D1
+    database_id = "a01f8789-4f1d-4b62-8eae-9f2a84b9d720" # Tu ID de la DB
+  }
+]
+
+# Opcional: si en algún momento quieres usar variables de entorno
+# [[vars]]
+# name = "MI_TOKEN"
+# value = "1234567890"
+
+# Opcional: si querés usar secretos
+# [[secrets]]
+# name = "MI_SECRET"
+# value = "valor_super_secreto"
