@@ -1,6 +1,6 @@
 name = "workerff"
 type = "javascript"
 
-account_id = "<TU_ACCOUNT_ID_DE_CLOUDFLARE>"
+account_id = "<f46d578d75f599a20bf5a662449a6a19>"
 workers_dev = true
 compatibility_date = "2026-03-08"
