@@ -70,9 +70,8 @@ if (text && text.startsWith("/creartorneo")) {
   });
 }
 if (text && text.startsWith("/borrartorneo")) {
-  const id = text.replace("/borrartorneo", "").trim();
+  const id = Number(text.replace("/borrartorneo", "").trim()); // ⚡ convertir a number
 
-  // Intentar borrar el torneo con ese ID
   const result = await env.torneos_db.prepare(
     "DELETE FROM torneos WHERE id = ?"
   )
@@ -86,14 +85,10 @@ if (text && text.startsWith("/borrartorneo")) {
     mensaje = `⚠️ No se encontró torneo con ID: ${id}`;
   }
 
-  // Enviar mensaje de confirmación al admin
   await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
     method: "POST",
     headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({
-      chat_id: chat_id,
-      text: mensaje
-    })
+    body: JSON.stringify({ chat_id: chat_id, text: mensaje })
   });
 }
       }
