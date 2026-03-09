@@ -1,6 +1,6 @@
 name = "workerff"                 # nombre de tu Worker
 type = "javascript"
-account_id = "TU_ACCOUNT_ID"      # el que ya pusiste
+account_id = "f46d578d75f599a20bf5a662449a6a19"      # el que ya pusiste
 workers_dev = true
 
 [[d1_databases]]
