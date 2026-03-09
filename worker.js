@@ -48,44 +48,54 @@ if (text && text.startsWith("/") && user_id != ADMIN_ID) {
   return new Response("No autorizado");
 }
 if (text && text.startsWith("/creartorneo")) {
-
   const nombre = text.replace("/creartorneo", "").trim();
 
-  await env.torneos_db.prepare(
+  // Insertar torneo y capturar resultado
+  const result = await env.torneos_db.prepare(
     "INSERT INTO torneos (nombre) VALUES (?)"
   )
   .bind(nombre)
   .run();
 
-  await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
+  // result.lastInsertRowid es el ID generado por D1
+  const nuevoId = result.lastInsertRowid;
+
+  // Enviar mensaje al admin con el nombre y el ID
+  await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
     body: JSON.stringify({
       chat_id: chat_id,
-      text: "✅ Torneo creado:\n🏆 " + nombre
+      text: `✅ Torneo creado:\n🏆 ${nombre}\nID: ${nuevoId}`
     })
   });
-
 }
 if (text && text.startsWith("/borrartorneo")) {
-
   const id = text.replace("/borrartorneo", "").trim();
 
-  await env.torneos_db.prepare(
+  // Intentar borrar el torneo con ese ID
+  const result = await env.torneos_db.prepare(
     "DELETE FROM torneos WHERE id = ?"
   )
   .bind(id)
   .run();
 
-  await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
+  let mensaje;
+  if (result.changes && result.changes > 0) {
+    mensaje = `🗑️ Torneo eliminado (ID: ${id})`;
+  } else {
+    mensaje = `⚠️ No se encontró torneo con ID: ${id}`;
+  }
+
+  // Enviar mensaje de confirmación al admin
+  await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
     body: JSON.stringify({
       chat_id: chat_id,
-      text: "🗑️ Torneo eliminado"
+      text: mensaje
     })
   });
-
 }
       }
 
