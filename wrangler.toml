@@ -1,9 +1,12 @@
-name = "workerff"                 # nombre de tu Worker
-type = "javascript"
-account_id = "f46d578d75f599a20bf5a662449a6a19"      # el que ya pusiste
-workers_dev = true
+name = "workerff"
+main = "worker.js"
+compatibility_date = "2026-03-08"
 
-[[d1_databases]]
-binding = "MY_DB"                 # nombre que usarás en el código
-database_name = "nombre-de-tu-d1"
-database_id = "ID_DE_TU_D1"
+[vars]
+PRUEBA = "123"
+
+[d1_databases]
+# ejemplo si tu D1 binding se llama MY_DB
+binding = "torneos_db"
+database_name = "prod-d1-tutorial"
+database_id = "a01f8789-4f1d-4b62-8eae-9f2a84b9d720"
