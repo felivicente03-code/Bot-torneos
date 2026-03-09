@@ -51,22 +51,20 @@ if (text && text.startsWith("/") && user_id != ADMIN_ID) {
 if (text && text.startsWith("/creartorneo")) {
   const nombre = text.replace("/creartorneo", "").trim();
 
-  // Insertar torneo y devolver el ID generado
-  const result = await env.torneos_db.prepare(
-    "INSERT INTO torneos (nombre) VALUES (?) RETURNING id"
+  // Insertar torneo
+  await env.torneos_db.prepare(
+    "INSERT INTO torneos (nombre) VALUES (?)"
   )
   .bind(nombre)
-  .first(); // .first() devuelve la primera fila
+  .run();
 
-  const nuevoId = result.id;
-
-  // Enviar mensaje al admin
+  // Enviar mensaje al admin solo con el nombre
   await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
     method: "POST",
     headers: {"Content-Type":"application/json"},
     body: JSON.stringify({
       chat_id: chat_id,
-      text: `✅ Torneo creado:\n🏆 ${nombre}\nID: ${nuevoId}`
+      text: `✅ Torneo creado:\n🏆 ${nombre}`
     })
   });
 }
