@@ -47,6 +47,7 @@ if (text && text.toLowerCase() === "torneo") {
 if (text && text.startsWith("/") && user_id != ADMIN_ID) {
   return new Response("No autorizado");
 }
+// CREAR TORNEO
 if (text && text.startsWith("/creartorneo")) {
   const nombre = text.replace("/creartorneo", "").trim();
 
@@ -55,11 +56,11 @@ if (text && text.startsWith("/creartorneo")) {
     "INSERT INTO torneos (nombre) VALUES (?) RETURNING id"
   )
   .bind(nombre)
-  .first(); // .first() devuelve un objeto con la primera fila
+  .first(); // .first() devuelve la primera fila
 
-  const nuevoId = result.id; // ahora sí tenemos el ID real
+  const nuevoId = result.id;
 
-  // Enviar mensaje al admin con el nombre y el ID
+  // Enviar mensaje al admin
   await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
     method: "POST",
     headers: {"Content-Type":"application/json"},
@@ -69,26 +70,26 @@ if (text && text.startsWith("/creartorneo")) {
     })
   });
 }
-if (text && text.startsWith("/borrartorneo")) {
-  const id = Number(text.replace("/borrartorneo", "").trim()); // ⚡ convertir a number
 
-  const result = await env.torneos_db.prepare(
-    "DELETE FROM torneos WHERE id = ?"
+// BORRAR TORNEO POR NOMBRE
+if (text && text.startsWith("/borrartorneo")) {
+  const nombre = text.replace("/borrartorneo", "").trim();
+
+  // Borrar torneo usando el nombre
+  await env.torneos_db.prepare(
+    "DELETE FROM torneos WHERE nombre = ?"
   )
-  .bind(id)
+  .bind(nombre)
   .run();
 
-  let mensaje;
-  if (result.changes && result.changes > 0) {
-    mensaje = `🗑️ Torneo eliminado (ID: ${id})`;
-  } else {
-    mensaje = `⚠️ No se encontró torneo con ID: ${id}`;
-  }
-
+  // Mandar mensaje de confirmación
   await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
     method: "POST",
     headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ chat_id: chat_id, text: mensaje })
+    body: JSON.stringify({
+      chat_id: chat_id,
+      text: `🗑️ Torneo eliminado: ${nombre}`
+    })
   });
 }
       }
