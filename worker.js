@@ -73,20 +73,36 @@ if (text && text.startsWith("/creartorneo")) {
 if (text && text.startsWith("/borrartorneo")) {
   const nombre = text.replace("/borrartorneo", "").trim();
 
-  // Borrar torneo usando el nombre
-  await env.torneos_db.prepare(
-    "DELETE FROM torneos WHERE nombre = ?"
+  // Verificar si existe
+  const torneoExistente = await env.torneos_db.prepare(
+    "SELECT nombre FROM torneos WHERE nombre = ?"
   )
   .bind(nombre)
-  .run();
+  .first();
 
-  // Mandar mensaje de confirmación
+  let mensaje;
+
+  if (torneoExistente) {
+    // Si existe, borrar
+    await env.torneos_db.prepare(
+      "DELETE FROM torneos WHERE nombre = ?"
+    )
+    .bind(nombre)
+    .run();
+
+    mensaje = `🗑️ Torneo eliminado: ${nombre}`;
+  } else {
+    // No existe
+    mensaje = `⚠️ No se encontró un torneo con ese nombre: ${nombre}`;
+  }
+
+  // Enviar mensaje de confirmación o error al admin
   await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
     method: "POST",
     headers: {"Content-Type":"application/json"},
     body: JSON.stringify({
       chat_id: chat_id,
-      text: `🗑️ Torneo eliminado: ${nombre}`
+      text: mensaje
     })
   });
 }
