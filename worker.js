@@ -113,34 +113,37 @@ if (data.callback_query) {
   const user_id = data.callback_query.from.id;
   const callback_data = data.callback_query.data;
 
-  // 👇 Cuando toca un botón de torneo
   if (callback_data.startsWith("torneo_")) {
     const torneoId = Number(callback_data.replace("torneo_", ""));
 
-  await fetch(`https://api.telegram.org/bot${TOKEN}/answerCallbackQuery`, {
-  method: "POST",
-  headers: {"Content-Type": "application/json"},
-  body: JSON.stringify({
-    callback_query_id: data.callback_query.id
-  })
-});
-    // 1️⃣ Mandar mensaje de confirmación
-     const torneo = await env.torneos_db.prepare(
+    // ⚡ RESPONDER CALLBACK INMEDIATAMENTE
+    await fetch(`https://api.telegram.org/bot${TOKEN}/answerCallbackQuery`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        callback_query_id: data.callback_query.id,
+        text: "✅ Inscripción iniciada", // opcional
+        show_alert: false
+      })
+    });
+
+    // Traer nombre del torneo
+    const torneo = await env.torneos_db.prepare(
       "SELECT nombre FROM torneos WHERE id = ?"
     ).bind(torneoId).first();
+    const nombreTorneo = torneo?.nombre || torneoId;
 
-const nombreTorneo = torneo?.nombre || torneoId;
+    // Mensaje de confirmación
     await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         chat_id: chat_id,
         text: `🏆 Vas a jugar en el torneo "${nombreTorneo}" ✅`
-        
       })
     });
 
-    // 2️⃣ Mandar mensaje pidiendo el ID del juego
+    // Pedir ID del juego
     await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
       method: "POST",
       headers: {"Content-Type": "application/json"},
@@ -150,10 +153,10 @@ const nombreTorneo = torneo?.nombre || torneoId;
       })
     });
 
-    // 3️⃣ Guardar en ESTADOS que este jugador está esperando ingresar su ID
+    // Guardar estado
     await env.estados_db.prepare(
-  "INSERT INTO estados (id_telegram, estado, torneo) VALUES (?, ?, ?)"
-).bind(user_id, "ESPERANDO_ID_JUEGO", nombreTorneo).run();
+      "INSERT INTO estados (id_telegram, estado, torneo) VALUES (?, ?, ?)"
+    ).bind(user_id, "ESPERANDO_ID_JUEGO", nombreTorneo).run();
   }
 }
       return new Response("ok");
