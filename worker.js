@@ -116,47 +116,45 @@ if (data.callback_query) {
   if (callback_data.startsWith("torneo_")) {
     const torneoId = Number(callback_data.replace("torneo_", ""));
 
-    // ⚡ RESPONDER CALLBACK INMEDIATAMENTE
-    await fetch(`https://api.telegram.org/bot${TOKEN}/answerCallbackQuery`, {
+    // ⚡ RESPONDER INMEDIATAMENTE EL CALLBACK
+    fetch(`https://api.telegram.org/bot${TOKEN}/answerCallbackQuery`, {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
-        callback_query_id: data.callback_query.id,
-        text: "✅ Inscripción iniciada", // opcional
-        show_alert: false
+        callback_query_id: data.callback_query.id
       })
     });
 
-    // Traer nombre del torneo
-    const torneo = await env.torneos_db.prepare(
-      "SELECT nombre FROM torneos WHERE id = ?"
-    ).bind(torneoId).first();
-    const nombreTorneo = torneo?.nombre || torneoId;
+    // Luego hacemos TODO lo demás **sin bloquear el return**
+    (async () => {
+      const torneo = await env.torneos_db.prepare(
+        "SELECT nombre FROM torneos WHERE id = ?"
+      ).bind(torneoId).first();
 
-    // Mensaje de confirmación
-    await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        chat_id: chat_id,
-        text: `🏆 Vas a jugar en el torneo "${nombreTorneo}" ✅`
-      })
-    });
+      const nombreTorneo = torneo?.nombre || torneoId;
 
-    // Pedir ID del juego
-    await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        chat_id: chat_id,
-        text: `🎮 ¿Cuál es tu ID en el juego?`
-      })
-    });
+      await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          chat_id: chat_id,
+          text: `🏆 Vas a jugar en el torneo "${nombreTorneo}" ✅`
+        })
+      });
 
-    // Guardar estado
-    await env.estados_db.prepare(
-      "INSERT INTO estados (id_telegram, estado, torneo) VALUES (?, ?, ?)"
-    ).bind(user_id, "ESPERANDO_ID_JUEGO", nombreTorneo).run();
+      await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          chat_id: chat_id,
+          text: `🎮 ¿Cuál es tu ID en el juego?`
+        })
+      });
+
+      await env.estados_db.prepare(
+        "INSERT INTO estados (id_telegram, estado, torneo) VALUES (?, ?, ?)"
+      ).bind(user_id, "ESPERANDO_ID_JUEGO", nombreTorneo).run();
+    })();
   }
 }
       return new Response("ok");
