@@ -47,17 +47,46 @@ if (text && text.toLowerCase() === "torneo") {
 if (text && text.startsWith("/") && user_id != ADMIN_ID) {
   return new Response("No autorizado");
 }
+if (text && text.startsWith("/creartorneo")) {
 
-        if (text === "/torneo") {
+  const nombre = text.replace("/creartorneo", "").trim();
 
-          await env.torneos_db.prepare(
-            "INSERT INTO torneos (nombre, fecha, jugadores) VALUES (?, ?, ?)"
-          )
-          .bind("Torneo automático", new Date().toISOString(), 0)
-          .run();
+  await env.torneos_db.prepare(
+    "INSERT INTO torneos (nombre) VALUES (?)"
+  )
+  .bind(nombre)
+  .run();
 
-        }
+  await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({
+      chat_id: chat_id,
+      text: "✅ Torneo creado:\n🏆 " + nombre
+    })
+  });
 
+}
+if (text && text.startsWith("/borrartorneo")) {
+
+  const id = text.replace("/borrartorneo", "").trim();
+
+  await env.torneos_db.prepare(
+    "DELETE FROM torneos WHERE id = ?"
+  )
+  .bind(id)
+  .run();
+
+  await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({
+      chat_id: chat_id,
+      text: "🗑️ Torneo eliminado"
+    })
+  });
+
+}
       }
 
       return new Response("ok");
