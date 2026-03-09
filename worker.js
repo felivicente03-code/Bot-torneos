@@ -106,6 +106,41 @@ if (text && text.startsWith("/borrartorneo")) {
     })
   });
 }
+if (data.callback_query) {
+  const chat_id = data.callback_query.message.chat.id;
+  const user_id = data.callback_query.from.id;
+  const callback_data = data.callback_query.data;
+
+  // 👇 Cuando toca un botón de torneo
+  if (callback_data.startsWith("torneo_")) {
+    const torneoId = callback_data.replace("torneo_", "");
+
+    // 1️⃣ Mandar mensaje de confirmación
+    await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        chat_id: chat_id,
+        text: `🏆 Vas a jugar en el torneo por "${torneoId}" ✅`
+      })
+    });
+
+    // 2️⃣ Mandar mensaje pidiendo el ID del juego
+    await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        chat_id: chat_id,
+        text: `🎮 ¿Cuál es tu ID en el juego?`
+      })
+    });
+
+    // 3️⃣ Guardar en ESTADOS que este jugador está esperando ingresar su ID
+    await env.estados_db.prepare(
+      "INSERT INTO estados (id_telegram, estado, torneo) VALUES (?, ?, ?)"
+    ).bind(user_id, "ESPERANDO_ID_JUEGO", torneoId).run();
+  }
+}
       }
 
       return new Response("ok");
