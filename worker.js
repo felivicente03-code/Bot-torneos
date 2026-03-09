@@ -12,6 +12,20 @@ export default {
 
       const data = await request.json();
 
+     let chat_id;
+let user_id;
+let text;
+
+if (data.message) {
+  chat_id = data.message.chat.id;
+  user_id = data.message.from.id;
+  text = data.message.text;
+} else if (data.callback_query) {
+  chat_id = data.callback_query.message.chat.id;
+  user_id = data.callback_query.from.id;
+  text = data.callback_query.data; // opcional, solo si necesitás
+}
+
       if (data.message) {
 
         const chat_id = data.message.chat.id;
