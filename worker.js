@@ -50,15 +50,14 @@ if (text && text.startsWith("/") && user_id != ADMIN_ID) {
 if (text && text.startsWith("/creartorneo")) {
   const nombre = text.replace("/creartorneo", "").trim();
 
-  // Insertar torneo y capturar resultado
+  // Insertar torneo y devolver el ID generado
   const result = await env.torneos_db.prepare(
-    "INSERT INTO torneos (nombre) VALUES (?)"
+    "INSERT INTO torneos (nombre) VALUES (?) RETURNING id"
   )
   .bind(nombre)
-  .run();
+  .first(); // .first() devuelve un objeto con la primera fila
 
-  // result.lastInsertRowid es el ID generado por D1
-  const nuevoId = result.lastInsertRowid;
+  const nuevoId = result.id; // ahora sí tenemos el ID real
 
   // Enviar mensaje al admin con el nombre y el ID
   await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
