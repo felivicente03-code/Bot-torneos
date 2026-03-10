@@ -12,7 +12,17 @@ export default {
       const text = (data.message.text || "").toLowerCase();
 
       if (text === "/start") {
-        // Crear preferencia en Mercado Pago
+        // 1️⃣ Enviar mensaje de hola
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chat_id,
+            text: "👋 Hola! Vamos a generar tu QR de pago para inscribirte en el torneo."
+          })
+        });
+
+        // 2️⃣ Crear preferencia Mercado Pago
         const mpResponse = await fetch("https://api.mercadopago.com/checkout/preferences", {
           method: "POST",
           headers: {
@@ -20,22 +30,23 @@ export default {
             Authorization: `Bearer ${MP_ACCESS_TOKEN}`
           },
           body: JSON.stringify({
-            items: [
-              { title: "Inscripción Torneo", quantity: 1, currency_id: "ARS", unit_price: 500 }
-            ],
-            payment_methods: { excluded_payment_types: [{ id: "credit_card" }] }, // sin tarjeta
+            items: [{ title: "Inscripción Torneo", quantity: 1, currency_id: "ARS", unit_price: 500 }],
+            payment_methods: { excluded_payment_types: [{ id: "credit_card" }] }, // Sin tarjeta
             back_urls: { success: "https://tuservidor.com/success" },
             auto_return: "approved"
           })
         });
 
         const mpData = await mpResponse.json();
-        if (!mpData.init_point) return new Response("Error al generar el link de Mercado Pago", { status: 500 });
 
-        // Link QR con Google Charts
+        if (!mpData.init_point) {
+          return new Response("Error generando link de Mercado Pago", { status: 500 });
+        }
+
+        // 3️⃣ Generar link QR con Google Charts
         const qrLink = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chl=${encodeURIComponent(mpData.init_point)}`;
 
-        // Enviar mensaje con Markdown
+        // 4️⃣ Enviar mensaje con el QR
         await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
