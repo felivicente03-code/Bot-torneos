@@ -142,6 +142,10 @@ export default {
     datos.nombre,
     "Argentina"
   ).run();
+   // Borrar el estado ya que el registro se completó
+   await env.torneos_db.prepare(
+  "DELETE FROM estados WHERE telegram_id = ?"
+).bind(user_id).run();
 
   // Envío mensaje de registro completado
   await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
