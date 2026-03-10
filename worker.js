@@ -130,29 +130,36 @@ export default {
         return new Response("ok");  
       }                 
 
-      if (text && text.toLowerCase() === "torneo") {          
-        const torneos = await env.torneos_db.prepare(           
-          "SELECT id, nombre FROM torneos"         
-        ).all();          
+      if (text && text.toLowerCase() === "torneo") {
+  // 1️⃣ Borrar cualquier estado anterior del usuario
+  await env.torneos_db.prepare(
+    "DELETE FROM estados WHERE telegram_id = ?"
+  ).bind(user_id).run();
 
-        const botones = torneos.results.map(t => [{           
-          text: t.nombre,           
-          callback_data: "torneo_" + t.id         
-        }]);          
+  // 2️⃣ Traer la lista de torneos
+  const torneos = await env.torneos_db.prepare(
+    "SELECT id, nombre FROM torneos"
+  ).all();
 
-        await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {           
-          method: "POST",           
-          headers: { "Content-Type": "application/json" },           
-          body: JSON.stringify({             
-            chat_id: chat_id,             
-            text: "🏆 ¿A qué torneo quieres inscribirte?",             
-            reply_markup: {               
-              inline_keyboard: botones             
-            }           
-          })         
-        });        
-      }      
-    } 
+  // 3️⃣ Crear botones inline
+  const botones = torneos.results.map(t => [{
+    text: t.nombre,
+    callback_data: "torneo_" + t.id
+  }]);
+
+  // 4️⃣ Enviar mensaje al usuario
+  await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chat_id,
+      text: "🏆 ¿A qué torneo quieres inscribirte?",
+      reply_markup: {
+        inline_keyboard: botones
+      }
+    })
+  });
+}
 
     if (data.callback_query) {    
       const chat_id = data.callback_query.message.chat.id;   
