@@ -87,7 +87,31 @@ const estado = await env.torneos_db.prepare(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       chat_id: chat_id,
-      text: "🌎 Ahora escribe tu PAÍS"
+      text: "🌎 Selecciona tu país"
+    })
+  });
+
+  return new Response("ok");
+
+}
+        //PAÍS
+        if (estado && estado.paso === 4) {
+
+  await env.torneos_db.prepare(
+    "UPDATE estados SET nombre = ?, paso = 5 WHERE telegram_id = ?"
+  ).bind(text, user_id).run();
+
+  await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chat_id,
+      text: "🌎 Selecciona tu país",
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "🇦🇷 Argentina", callback_data: "pais_argentina" }]
+        ]
+      }
     })
   });
 
@@ -149,7 +173,26 @@ if (data.callback_query) {
     ).bind(user_id, 1, torneo_id).run();
 
   }
+    if (callback_data === "pais_argentina") {
 
+  const estado = await env.torneos_db.prepare(
+    "SELECT * FROM estados WHERE telegram_id = ?"
+  ).bind(user_id).first();
+
+  await env.torneos_db.prepare(
+    "UPDATE estados SET pais = ?, paso = 6 WHERE telegram_id = ?"
+  ).bind("Argentina", user_id).run();
+
+  await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chat_id,
+      text: "✅ País registrado: Argentina"
+    })
+  });
+
+}
 }
     return new Response("ok");
 
