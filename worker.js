@@ -1,4 +1,5 @@
 const TOKEN = "8750689884:AAGX4mL-lUxs-5zEbgONWvyzFW6bXDiJB3A";
+const MP_ACCESS_TOKEN = "APP_USR-4428056520434568-030317-d98e43dabb9342447235c8b040971678-2127284765";
 
 export default {
   async fetch(request) {
@@ -10,12 +11,52 @@ export default {
       if (data.message) {
         const chat_id = data.message.chat.id;
 
+        // 1️⃣ Mensaje inicial de Hola
         await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chat_id: chat_id,
-            text: "👋 Hola, funcionó el bot!"
+            text: "👋 Hola! Preparando tu pago..."
+          })
+        });
+
+        // 2️⃣ Crear preferencia en Mercado Pago
+        const preferenceResponse = await fetch("https://api.mercadopago.com/checkout/preferences", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${MP_ACCESS_TOKEN}`
+          },
+          body: JSON.stringify({
+            items: [
+              {
+                title: "Inscripción Torneo",
+                quantity: 1,
+                unit_price: 1000 // precio en tu moneda
+              }
+            ],
+            payment_methods: {
+              excluded_payment_types: [{ id: "credit_card" }] // ✅ evita tarjeta
+            },
+            back_urls: {
+              success: "https://tusitio.com/success",
+              pending: "https://tusitio.com/pending",
+              failure: "https://tusitio.com/failure"
+            },
+            auto_return: "approved"
+          })
+        });
+
+        const preference = await preferenceResponse.json();
+
+        // 3️⃣ Mandar link del QR / checkout al usuario
+        await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chat_id,
+            text: `💰 Listo! Escaneá el QR o hacé clic para pagar:\n\n${preference.init_point}`
           })
         });
 
