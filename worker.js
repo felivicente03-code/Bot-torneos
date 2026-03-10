@@ -83,19 +83,20 @@ if (estado && estado.paso === 4) {
   ).bind(text, user_id).run();
 
   await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chat_id,
-      text: "🌎 Selecciona tu país",
-      reply_markup: {
-        keyboard: [
-          [{ text: "🇦🇷 Argentina" }]
-        ],
-        resize_keyboard: true,
-        one_time_keyboard: true
-    })
-  });
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    chat_id: chat_id,
+    text: "🌎 Selecciona tu país",
+    reply_markup: {
+      keyboard: [
+        [{ text: "🇦🇷 Argentina" }]
+      ],
+      resize_keyboard: true,
+      one_time_keyboard: true
+    }
+  })
+});
 
   return new Response("ok");
 
