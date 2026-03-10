@@ -180,8 +180,10 @@ if (data.callback_query) {
     ).bind(user_id, 1, torneo_id).run();
 
   }
-   
-    return new Response("ok");
+
+}
+
+return new Response("ok");
 
   }
 };
