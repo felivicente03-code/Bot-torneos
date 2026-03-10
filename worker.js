@@ -12,7 +12,7 @@ export default {
     if (data.message) {
 
       const chat_id = data.message.chat.id;
-      const text = data.message.text;
+      const text = data.message.text || "";
       const user_id = data.message.from.id;
 
 const estado = await env.torneos_db.prepare(
