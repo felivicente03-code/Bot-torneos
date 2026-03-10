@@ -48,21 +48,41 @@ export default {
       // 🔹 Flujo de pasos
       if (estado) {
         if (estado.paso === 1) {
-          await env.torneos_db.prepare(
-            "UPDATE estados SET id_juego = ?, paso = 2 WHERE telegram_id = ?"
-          ).bind(text, user_id).run();
+  // Verificar si ya está en jugadores
+  const jugador_existente = await env.torneos_db.prepare(
+    "SELECT * FROM jugadores WHERE id_juego = ?"
+  ).bind(text).first();
 
-          await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chat_id,
-              text: "✏️ Ahora escribe tu NICK en el juego"
-            })
-          });
+  if (jugador_existente) {
+    // Si ya existe, enviar mensaje especial
+    await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chat_id,
+        text: `Perfecto ${jugador_existente.nick}!!!\nAquí está el link para que te inscribas ⬇️`
+      })
+    });
 
-          return new Response("ok");
-        }
+    return new Response("ok");
+  }
+
+  // Si no existe, continuar con el flujo normal
+  await env.torneos_db.prepare(
+    "UPDATE estados SET id_juego = ?, paso = 2 WHERE telegram_id = ?"
+  ).bind(text, user_id).run();
+
+  await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chat_id,
+      text: "✏️ Ahora escribe tu NICK en el juego"
+    })
+  });
+
+  return new Response("ok");
+}
 
         if (estado.paso === 2) {
           await env.torneos_db.prepare(
