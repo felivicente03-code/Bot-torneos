@@ -120,37 +120,41 @@ export default {
           return new Response("ok");
         }
 
-        if (estado.paso === 5 && text === "🇦🇷 Argentina") {
-          await env.torneos_db.prepare(
-            "UPDATE estados SET pais = ?, paso = 6 WHERE telegram_id = ?"
-          ).bind("Argentina", user_id).run();
+        if (estado.paso === 5 && text.includes("Argentina")) {
+  // Actualizo el estado
+  await env.torneos_db.prepare(
+    "UPDATE estados SET pais = ?, paso = 6 WHERE telegram_id = ?"
+  ).bind("Argentina", user_id).run();
 
-          const datos = await env.torneos_db.prepare(
-            "SELECT * FROM estados WHERE telegram_id = ?"
-          ).bind(user_id).first();
+  // Traigo los datos actualizados
+  const datos = await env.torneos_db.prepare(
+    "SELECT * FROM estados WHERE telegram_id = ?"
+  ).bind(user_id).first();
 
-          await env.torneos_db.prepare(
-            "INSERT INTO jugadores (telegram_id, id_juego, nick, apellido, nombre, pais) VALUES (?, ?, ?, ?, ?, ?)"
-          ).bind(
-            user_id,
-            datos.id_juego,
-            datos.nick,
-            datos.apellido,
-            datos.nombre,
-            "Argentina"
-          ).run();
+  // Inserto en jugadores (evito errores con OR REPLACE)
+  await env.torneos_db.prepare(
+    "INSERT OR REPLACE INTO jugadores (telegram_id, id_juego, nick, apellido, nombre, pais) VALUES (?, ?, ?, ?, ?, ?)"
+  ).bind(
+    user_id,
+    datos.id_juego,
+    datos.nick,
+    datos.apellido,
+    datos.nombre,
+    "Argentina"
+  ).run();
 
-          await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chat_id,
-              text: "✅ Registro completado",
-              reply_markup: { remove_keyboard: true }
-            })
-          });
+  // Envío mensaje de registro completado
+  await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chat_id,
+      text: "✅ Registro completado",
+      reply_markup: { remove_keyboard: true }
+    })
+  });
 
-          return new Response("ok");
+  return new Response("ok");
         }
       }
     } // <-- aquí se cierra if(data.message)
