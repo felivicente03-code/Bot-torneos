@@ -161,8 +161,9 @@ if (estado && estado.paso === 5 && text === "🇦🇷 Argentina") {
   });    
 
   return new Response("ok");  
-} 
-
+    } 
+  }
+}
     if (data.callback_query) {    
       const chat_id = data.callback_query.message.chat.id;   
       const user_id = data.callback_query.from.id;   
