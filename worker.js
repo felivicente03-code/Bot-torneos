@@ -16,7 +16,7 @@ export default {
 
       if (text && text.toLowerCase() === "torneo") {
 
-  const torneos = await env.DB.prepare(
+  const torneos = await env.torneos_db.prepare(
     "SELECT id, nombre FROM torneos"
   ).all();
 
