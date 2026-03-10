@@ -89,14 +89,18 @@ if (estado && estado.paso === 4) {
       chat_id: chat_id,
       text: "🌎 Selecciona tu país",
       reply_markup: {
-  keyboard: [
-    [{ text: "🇦🇷 Argentina" }]
-  ],
-  resize_keyboard: true,
-  one_time_keyboard: true
-}
+        keyboard: [
+          [{ text: "🇦🇷 Argentina" }]
+        ],
+        resize_keyboard: true,
+        one_time_keyboard: true
+      }
     })
   });
+
+  return new Response("ok");
+
+}
 
      // PAIS
 if (estado && estado.paso === 5 && text === "🇦🇷 Argentina") {
@@ -113,10 +117,6 @@ if (estado && estado.paso === 5 && text === "🇦🇷 Argentina") {
       text: "✅ País registrado"
     })
   });
-
-  return new Response("ok");
-
-}
 
   return new Response("ok");
 
