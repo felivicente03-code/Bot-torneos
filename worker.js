@@ -75,6 +75,25 @@ const estado = await env.torneos_db.prepare(
   return new Response("ok");
 
 }
+       //NOMBRE
+       if (estado && estado.paso === 4) {
+
+  await env.torneos_db.prepare(
+    "UPDATE estados SET nombre = ?, paso = 5 WHERE telegram_id = ?"
+  ).bind(text, user_id).run();
+
+  await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chat_id,
+      text: "🌎 Ahora escribe tu PAÍS"
+    })
+  });
+
+  return new Response("ok");
+
+}
 
       if (text && text.toLowerCase() === "torneo") {
 
