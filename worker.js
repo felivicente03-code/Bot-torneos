@@ -160,6 +160,7 @@ export default {
     })
   });
 }
+}
 
     if (data.callback_query) {    
       const chat_id = data.callback_query.message.chat.id;   
