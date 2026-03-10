@@ -20,24 +20,24 @@ export default {
     "SELECT id, nombre FROM torneos"
   ).all();
 
-  let mensaje = "🏆 Torneos disponibles:\n\n";
-
-  torneos.results.forEach(t => {
-    mensaje += `${t.id} - ${t.nombre}\n`;
-  });
+  const botones = torneos.results.map(t => [{
+    text: t.nombre,
+    callback_data: "torneo_" + t.id
+  }]);
 
   await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       chat_id: chat_id,
-      text: mensaje
+      text: "🏆 ¿A qué torneo quieres inscribirte?",
+      reply_markup: {
+        inline_keyboard: botones
+      }
     })
   });
 
 }
-
-    }
 
     return new Response("ok");
   }
