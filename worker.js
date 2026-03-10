@@ -89,10 +89,12 @@ if (estado && estado.paso === 4) {
       chat_id: chat_id,
       text: "🌎 Selecciona tu país",
       reply_markup: {
-        inline_keyboard: [
-          [{ text: "🇦🇷 Argentina", callback_data: "pais_argentina" }]
-        ]
-      }
+  keyboard: [
+    [{ text: "🇦🇷 Argentina" }]
+  ],
+  resize_keyboard: true,
+  one_time_keyboard: true
+}
     })
   });
 
