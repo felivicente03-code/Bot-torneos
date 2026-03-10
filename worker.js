@@ -1,4 +1,5 @@
-const TOKEN = "8750689884:AAGX4mL-lUxs-5zEbgONWvyzFW6bXDiJB3A";
+const TOKEN = 8750689884:AAGX4mL-lUxs-5zEbgONWvyzFW6bXDiJB3A";
+const MP_ACCESS_TOKEN = "APP_USR-4428056520434568-030317-d98e43dabb9342447235c8b040971678-2127284765";
 
 export default {
   async fetch(request, env) {
@@ -8,208 +9,52 @@ export default {
 
     const data = await request.json();
 
-    // 🔹 Mensajes de texto
     if (data.message) {
       const chat_id = data.message.chat.id;
-      const text = data.message.text || "";
       const user_id = data.message.from.id;
+      const text = data.message.text || "";
 
-      if (text.toLowerCase() === "torneo") {
-        await env.torneos_db.prepare(
-          "DELETE FROM estados WHERE telegram_id = ?"
-        ).bind(user_id).run();
+      if (text === "/start") {
+        // Crear checkout de Mercado Pago
+        const mp_res = await fetch("https://api.mercadopago.com/checkout/preferences", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${MP_ACCESS_TOKEN}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            items: [
+              {
+                title: "Inscripción Torneo",
+                quantity: 1,
+                unit_price: 10 // Cambiar al monto que quieras
+              }
+            ],
+            payer: { email: "usuario@example.com" }, // opcional
+            back_urls: { success: "https://tu-dominio.com/success" },
+            payment_methods: {
+              excluded_payment_types: [{ id: "credit_card" }], // solo transferencia bancaria
+            },
+            external_reference: user_id.toString() // identificamos al usuario
+          })
+        });
 
-        const torneos = await env.torneos_db.prepare(
-          "SELECT id, nombre FROM torneos"
-        ).all();
+        const preference = await mp_res.json();
 
-        const botones = torneos.results.map(t => [{
-          text: t.nombre,
-          callback_data: "torneo_" + t.id
-        }]);
-
+        // Enviar link de pago al usuario
         await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            chat_id: chat_id,
-            text: "🏆 ¿A qué torneo quieres inscribirte?",
-            reply_markup: { inline_keyboard: botones }
+            chat_id,
+            text: `💰 Hola! Para pagar tu inscripción, utiliza este link:\n${preference.init_point}`
           })
         });
 
         return new Response("ok");
       }
-
-      const estado = await env.torneos_db.prepare(
-        "SELECT * FROM estados WHERE telegram_id = ?"
-      ).bind(user_id).first();
-
-      // 🔹 Flujo de pasos
-      if (estado) {
-        if (estado.paso === 1) {
-  // Verificar si ya está en jugadores
-  const jugador_existente = await env.torneos_db.prepare(
-    "SELECT * FROM jugadores WHERE id_juego = ?"
-  ).bind(text).first();
-
-  if (jugador_existente) {
-    // Si ya existe, enviar mensaje especial
-    await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chat_id,
-        text: `Perfecto ${jugador_existente.nick}!!!\nAquí está el link para que te inscribas ⬇️`
-      })
-    });
-
-    return new Response("ok");
-  }
-
-  // Si no existe, continuar con el flujo normal
-  await env.torneos_db.prepare(
-    "UPDATE estados SET id_juego = ?, paso = 2 WHERE telegram_id = ?"
-  ).bind(text, user_id).run();
-
-  await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chat_id,
-      text: "✏️ Ahora escribe tu NICK en el juego"
-    })
-  });
-
-  return new Response("ok");
-}
-
-        if (estado.paso === 2) {
-          await env.torneos_db.prepare(
-            "UPDATE estados SET nick = ?, paso = 3 WHERE telegram_id = ?"
-          ).bind(text, user_id).run();
-
-          await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chat_id,
-              text: "✏️ Ahora escribe tu APELLIDO"
-            })
-          });
-
-          return new Response("ok");
-        }
-
-        if (estado.paso === 3) {
-          await env.torneos_db.prepare(
-            "UPDATE estados SET apellido = ?, paso = 4 WHERE telegram_id = ?"
-          ).bind(text, user_id).run();
-
-          await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chat_id,
-              text: "✏️ Ahora escribe tu NOMBRE"
-            })
-          });
-
-          return new Response("ok");
-        }
-
-        if (estado.paso === 4) {
-          await env.torneos_db.prepare(
-            "UPDATE estados SET nombre = ?, paso = 5 WHERE telegram_id = ?"
-          ).bind(text, user_id).run();
-
-          await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chat_id,
-              text: "🌎 Selecciona tu país",
-              reply_markup: {
-                keyboard: [[{ text: "🇦🇷 Argentina" }]],
-                resize_keyboard: true,
-                one_time_keyboard: true
-              }
-            })
-          });
-
-          return new Response("ok");
-        }
-
-        if (estado.paso === 5 && text.includes("Argentina")) {
-  // Actualizo el estado
-  await env.torneos_db.prepare(
-    "UPDATE estados SET pais = ?, paso = 6 WHERE telegram_id = ?"
-  ).bind("Argentina", user_id).run();
-
-  // Traigo los datos actualizados
-  const datos = await env.torneos_db.prepare(
-    "SELECT * FROM estados WHERE telegram_id = ?"
-  ).bind(user_id).first();
-
-  // Inserto en jugadores (evito errores con OR REPLACE)
-  await env.torneos_db.prepare(
-    "INSERT OR REPLACE INTO jugadores (telegram_id, id_juego, nick, apellido, nombre, pais) VALUES (?, ?, ?, ?, ?, ?)"
-  ).bind(
-    user_id,
-    datos.id_juego,
-    datos.nick,
-    datos.apellido,
-    datos.nombre,
-    "Argentina"
-  ).run();
-   // Borrar el estado ya que el registro se completó
-   await env.torneos_db.prepare(
-  "DELETE FROM estados WHERE telegram_id = ?"
-).bind(user_id).run();
-
-  // Envío mensaje de registro completado
-  await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chat_id,
-      text: "✅ Registro completado",
-      reply_markup: { remove_keyboard: true }
-    })
-  });
-
-  return new Response("ok");
-        }
-      }
-    } // <-- aquí se cierra if(data.message)
-
-    // 🔹 Callback queries (botones inline)
-    if (data.callback_query) {
-      const chat_id = data.callback_query.message.chat.id;
-      const user_id = data.callback_query.from.id;
-      const callback_data = data.callback_query.data;
-
-      if (callback_data.startsWith("torneo_")) {
-        const torneo_id = callback_data.replace("torneo_", "");
-        const torneo = await env.torneos_db.prepare(
-          "SELECT nombre FROM torneos WHERE id = ?"
-        ).bind(torneo_id).first();
-
-        await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chat_id,
-            text: `🏆 Vas a jugar en el torneo "${torneo.nombre}"\n\n🎮 ¿Cuál es tu ID en el juego?`
-          })
-        });
-
-        await env.torneos_db.prepare(
-          "INSERT OR REPLACE INTO estados (telegram_id, paso, torneo_id) VALUES (?, ?, ?)"
-        ).bind(user_id, 1, torneo_id).run();
-      }
     }
 
-    return new Response("ok");
+    return new Response("Bot activo");
   }
 };
