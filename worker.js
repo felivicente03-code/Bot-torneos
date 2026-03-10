@@ -18,6 +18,34 @@ export default {
 const estado = await env.torneos_db.prepare(
   "SELECT * FROM estados WHERE telegram_id = ?"
 ).bind(user_id).first();
+
+
+      if (text && text.toLowerCase() === "torneo") {
+
+        const torneos = await env.torneos_db.prepare(
+          "SELECT id, nombre FROM torneos"
+        ).all();
+
+        const botones = torneos.results.map(t => [{
+          text: t.nombre,
+          callback_data: "torneo_" + t.id
+        }]);
+
+        await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chat_id,
+            text: "🏆 ¿A qué torneo quieres inscribirte?",
+            reply_markup: {
+              inline_keyboard: botones
+            }
+          })
+        });
+
+      }
+
+    }
      //ID JUEGO
    if (estado && estado.paso === 1) {
 
@@ -140,33 +168,6 @@ if (estado && estado.paso === 5 && text === "🇦🇷 Argentina") {
 
 }
         
-
-      if (text && text.toLowerCase() === "torneo") {
-
-        const torneos = await env.torneos_db.prepare(
-          "SELECT id, nombre FROM torneos"
-        ).all();
-
-        const botones = torneos.results.map(t => [{
-          text: t.nombre,
-          callback_data: "torneo_" + t.id
-        }]);
-
-        await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chat_id,
-            text: "🏆 ¿A qué torneo quieres inscribirte?",
-            reply_markup: {
-              inline_keyboard: botones
-            }
-          })
-        });
-
-      }
-
-    }
 if (data.callback_query) {
 
   const chat_id = data.callback_query.message.chat.id;
