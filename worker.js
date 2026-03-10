@@ -11,18 +11,18 @@ export default {
       if (data.message) {
         const chat_id = data.message.chat.id;
 
-        // 1️⃣ Mensaje inicial de Hola
+        // Mensaje inicial
         await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            chat_id: chat_id,
-            text: "👋 Hola! Preparando tu pago..."
+            chat_id,
+            text: "👋 Hola! Generando tu QR para pagar..."
           })
         });
 
-        // 2️⃣ Crear preferencia en Mercado Pago
-        const preferenceResponse = await fetch("https://api.mercadopago.com/checkout/preferences", {
+        // Crear preferencia para QR / transfer
+        const resp = await fetch("https://api.mercadopago.com/checkout/preferences", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -30,33 +30,26 @@ export default {
           },
           body: JSON.stringify({
             items: [
-              {
-                title: "Inscripción Torneo",
-                quantity: 1,
-                unit_price: 1000 // precio en tu moneda
-              }
+              { title: "Inscripción Torneo", quantity: 1, unit_price: 1000 }
             ],
             payment_methods: {
-              excluded_payment_types: [{ id: "credit_card" }] // ✅ evita tarjeta
-            },
-            back_urls: {
-              success: "https://tusitio.com/success",
-              pending: "https://tusitio.com/pending",
-              failure: "https://tusitio.com/failure"
-            },
-            auto_return: "approved"
+              excluded_payment_types: [{ id: "credit_card" }],
+              excluded_payment_methods: []
+            }
           })
         });
 
-        const preference = await preferenceResponse.json();
+        const preference = await resp.json();
 
-        // 3️⃣ Mandar link del QR / checkout al usuario
+        // Aquí es donde necesitamos el QR
+        // Actualmente Mercado Pago no devuelve QR directamente desde init_point
+        // Pero podemos usar el link del init_point que genera QR en la app
         await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            chat_id: chat_id,
-            text: `💰 Listo! Escaneá el QR o hacé clic para pagar:\n\n${preference.init_point}`
+            chat_id,
+            text: `💰 Escaneá este link en tu app o navegador para ver el QR y pagar:\n\n${preference.init_point}`
           })
         });
 
