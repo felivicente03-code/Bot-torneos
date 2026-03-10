@@ -94,7 +94,6 @@ if (estado && estado.paso === 4) {
         ],
         resize_keyboard: true,
         one_time_keyboard: true
-      }
     })
   });
 
