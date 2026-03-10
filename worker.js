@@ -16,29 +16,32 @@ export default {
 
       if (text && text.toLowerCase() === "torneo") {
 
-  const torneos = await env.torneos_db.prepare(
-    "SELECT id, nombre FROM torneos"
-  ).all();
+        const torneos = await env.torneos_db.prepare(
+          "SELECT id, nombre FROM torneos"
+        ).all();
 
-  const botones = torneos.results.map(t => [{
-    text: t.nombre,
-    callback_data: "torneo_" + t.id
-  }]);
+        const botones = torneos.results.map(t => [{
+          text: t.nombre,
+          callback_data: "torneo_" + t.id
+        }]);
 
-  await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chat_id,
-      text: "🏆 ¿A qué torneo quieres inscribirte?",
-      reply_markup: {
-        inline_keyboard: botones
+        await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chat_id,
+            text: "🏆 ¿A qué torneo quieres inscribirte?",
+            reply_markup: {
+              inline_keyboard: botones
+            }
+          })
+        });
+
       }
-    })
-  });
 
-}
+    }
 
     return new Response("ok");
+
   }
 };
