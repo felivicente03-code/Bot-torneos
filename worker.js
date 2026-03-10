@@ -40,7 +40,36 @@ export default {
       }
 
     }
+if (data.callback_query) {
 
+  const chat_id = data.callback_query.message.chat.id;
+  const user_id = data.callback_query.from.id;
+  const callback_data = data.callback_query.data;
+
+  if (callback_data.startsWith("torneo_")) {
+
+    const torneo_id = callback_data.replace("torneo_", "");
+
+    const torneo = await env.torneos_db.prepare(
+      "SELECT nombre FROM torneos WHERE id = ?"
+    ).bind(torneo_id).first();
+
+    await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chat_id,
+        text: `🏆 Vas a jugar en el torneo "${torneo.nombre}"\n\n🎮 ¿Cuál es tu ID en el juego?`
+      })
+    });
+
+    await env.torneos_db.prepare(
+      "INSERT OR REPLACE INTO estados (telegram_id, paso, torneo_id) VALUES (?, ?, ?)"
+    ).bind(user_id, 1, torneo_id).run();
+
+  }
+
+}
     return new Response("ok");
 
   }
