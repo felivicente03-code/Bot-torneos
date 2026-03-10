@@ -1,4 +1,4 @@
-const TOKEN = "TU_TOKEN";
+const TOKEN = "8750689884:AAGX4mL-lUxs-5zEbgONWvyzFW6bXDiJB3A";
 const ADMIN_ID = 8581898801;
 
 export default {
