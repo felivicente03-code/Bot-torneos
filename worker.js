@@ -14,28 +14,28 @@ export default {
       const chat_id = data.message.chat.id;
       const text = data.message.text;
 
-      if (text === "torneo") {
+      if (text && text.toLowerCase() === "torneo") {
 
-        const torneos = await env.DB.prepare(
-          "SELECT id, nombre FROM torneos"
-        ).all();
+  const torneos = await env.DB.prepare(
+    "SELECT id, nombre FROM torneos"
+  ).all();
 
-        let mensaje = "🏆 Torneos disponibles:\n\n";
+  let mensaje = "🏆 Torneos disponibles:\n\n";
 
-        torneos.results.forEach(t => {
-          mensaje += `${t.id} - ${t.nombre}\n`;
-        });
+  torneos.results.forEach(t => {
+    mensaje += `${t.id} - ${t.nombre}\n`;
+  });
 
-        await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chat_id,
-            text: mensaje
-          })
-        });
+  await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chat_id,
+      text: mensaje
+    })
+  });
 
-      }
+}
 
     }
 
