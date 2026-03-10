@@ -110,13 +110,16 @@ if (estado && estado.paso === 5 && text === "🇦🇷 Argentina") {
   ).bind("Argentina", user_id).run();
 
   await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chat_id,
-      text: "✅ País registrado"
-    })
-  });
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    chat_id: chat_id,
+    text: "✅ País registrado",
+    reply_markup: {
+      remove_keyboard: true
+    }
+  })
+});
 
   return new Response("ok");
 
