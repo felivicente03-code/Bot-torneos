@@ -13,6 +13,30 @@ export default {
 
       const chat_id = data.message.chat.id;
       const text = data.message.text;
+      const user_id = data.message.from.id;
+
+const estado = await env.torneos_db.prepare(
+  "SELECT * FROM estados WHERE telegram_id = ?"
+).bind(user_id).first();
+     //ID JUEGO
+   if (estado && estado.paso === 1) {
+
+  await env.torneos_db.prepare(
+    "UPDATE estados SET id_juego = ?, paso = 2 WHERE telegram_id = ?"
+  ).bind(text, user_id).run();
+
+  await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chat_id,
+      text: "✏️ Ahora escribe tu NICK en el juego"
+    })
+  });
+
+  return new Response("ok");
+
+}
 
       if (text && text.toLowerCase() === "torneo") {
 
