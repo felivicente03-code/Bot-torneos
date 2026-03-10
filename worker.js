@@ -11,8 +11,11 @@ export default {
       const chat_id = data.message.chat.id;       
       const text = data.message.text || "";       
       const user_id = data.message.from.id;  
+      const estado = await env.torneos_db.prepare(   
+        "SELECT * FROM estados WHERE telegram_id = ?" 
+      ).bind(user_id).first();     
 
-     if (text && text.toLowerCase() === "torneo") {
+      if (text && text.toLowerCase() === "torneo") {
   // 1️⃣ Borrar cualquier estado anterior del usuario
   await env.torneos_db.prepare(
     "DELETE FROM estados WHERE telegram_id = ?"
@@ -42,10 +45,7 @@ export default {
     })
   });
 }
-}
-      const estado = await env.torneos_db.prepare(   
-        "SELECT * FROM estados WHERE telegram_id = ?" 
-      ).bind(user_id).first();      
+} 
 
       //ID JUEGO    
       if (estado && estado.paso === 1) {    
