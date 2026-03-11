@@ -52,34 +52,34 @@ Cuando el pago llegue se detectará automáticamente.`
     // CONSULTAR PAGOS
     if (url.pathname === "/check") {
 
-      const res = await fetch(
-        "https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc",
-        {
-          headers: {
-            Authorization: `Bearer ${MP_ACCESS_TOKEN}`
-          }
-        }
-      );
+  const res = await fetch(
+    "https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc",
+    {
+      headers: {
+        Authorization: `Bearer ${MP_ACCESS_TOKEN}`
+      }
+    }
+  );
 
-      const data = await res.json();
+  const data = await res.json();
 
-      const mensaje =
-`📊 RESPUESTA COMPLETA MERCADO PAGO
+  const mensaje =
+`📊 RESPUESTA MERCADO PAGO
 
-${JSON.stringify(data, null, 2)}
+${JSON.stringify(data).slice(0,3500)}
 `;
 
-      await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: ADMIN_CHAT_ID,
-          text: mensaje
-        })
-      });
+  await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: ADMIN_CHAT_ID,
+      text: mensaje
+    })
+  });
 
-      return new Response("debug enviado");
-    }
+  return new Response("debug enviado");
+}
 
     return new Response("bot activo");
   }
