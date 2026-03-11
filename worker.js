@@ -18,7 +18,7 @@ export default {
         // 🔹 Comando /start
         if (text.toLowerCase() === "/start") {
           // Mensaje inicial
-          await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+          await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -58,7 +58,7 @@ export default {
           const mpData = await mpResponse.json();
 
           // Enviar link del checkout al usuario
-          await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+          await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
