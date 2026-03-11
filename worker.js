@@ -15,7 +15,7 @@ if (!data.message) return new Response("ok");
 
 const chat_id = data.message.chat.id;
 
-/* COMANDO START */
+/* START */
 
 if (data.message.text === "/start") {
 
@@ -25,14 +25,14 @@ await sendMessage(chat_id,
 return new Response("ok");
 }
 
-/* SI ENVÍA FOTO */
+/* FOTO */
 
 if (data.message.photo) {
 
 const photo = data.message.photo.pop();
 const file_id = photo.file_id;
 
-/* obtener archivo telegram */
+/* OBTENER IMAGEN */
 
 const fileRes = await fetch(`https://api.telegram.org/bot${TOKEN}/getFile?file_id=${file_id}`);
 const fileData = await fileRes.json();
@@ -53,21 +53,47 @@ body: `apikey=${OCR_API_KEY}&url=${file_url}&language=spa`
 
 const ocrData = await ocrRes.json();
 
-const texto = ocrData.ParsedResults?.[0]?.ParsedText || "";
+let texto = ocrData.ParsedResults?.[0]?.ParsedText || "";
 
-/* BUSCAR E2E ID */
+/* NORMALIZAR TEXTO */
 
-const match = texto.match(/[A-Z0-9]{20,35}/);
+texto = texto.toUpperCase();
 
-if (!match) {
+/* ENVIAR TEXTO OCR PARA DEBUG */
+
+await sendMessage(chat_id, "📄 TEXTO LEÍDO:\n\n" + texto);
+
+/* ELIMINAR ESPACIOS */
+
+const textoLimpio = texto.replace(/\s+/g, "");
+
+/* BUSCAR POSIBLES IDS */
+
+const posibles = textoLimpio.match(/[A-Z0-9]{10,40}/g) || [];
+
+let idOperacion = null;
+
+for (let id of posibles) {
+
+if (id.length >= 20) {
+idOperacion = id;
+break;
+}
+
+}
+
+if (!idOperacion) {
 
 await sendMessage(chat_id,
-"❌ No pude encontrar el ID de la transferencia en el comprobante.");
+"❌ No pude detectar el ID de operación en el comprobante.");
 
 return new Response("ok");
 }
 
-const e2e_id = match[0];
+/* MOSTRAR ID DETECTADO */
+
+await sendMessage(chat_id,
+"🔎 ID detectado:\n" + idOperacion);
 
 /* CONSULTAR PAGOS */
 
@@ -91,10 +117,10 @@ pago.point_of_interaction?.
 transaction_data?.
 e2e_id;
 
-if (api_e2e === e2e_id) {
+if (api_e2e === idOperacion) {
 
 await sendMessage(chat_id,
-`✅ Pago confirmado\n\nMonto: $${pago.transaction_amount}`);
+`✅ Pago confirmado\n\n💰 Monto: $${pago.transaction_amount}`);
 
 return new Response("ok");
 }
@@ -111,7 +137,7 @@ return new Response("ok");
 }
 };
 
-/* FUNCION ENVIAR MENSAJE */
+/* FUNCION MENSAJE */
 
 async function sendMessage(chat_id, text) {
 
