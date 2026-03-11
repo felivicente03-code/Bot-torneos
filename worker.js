@@ -63,7 +63,14 @@ Cuando el pago llegue se detectará automáticamente.`
 
   const data = await res.json();
 
-  const texto = JSON.stringify(data, null, 2);
+  if (!data.results || data.results.length === 0) {
+    return new Response("no hay pagos");
+  }
+
+  // SOLO EL ULTIMO PAGO
+  const pago = data.results[0];
+
+  const texto = JSON.stringify(pago, null, 2);
 
   const partes = texto.match(/[\s\S]{1,3500}/g);
 
@@ -80,7 +87,7 @@ Cuando el pago llegue se detectará automáticamente.`
 
   }
 
-  return new Response("json enviado");
+  return new Response("ultimo pago enviado");
 }
 
     return new Response("bot activo");
