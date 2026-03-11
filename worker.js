@@ -3,74 +3,67 @@ const MP_ACCESS_TOKEN = "APP_USR-4428056520434568-030317-d98e43dabb9342447235c8b
 
 
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     if (request.method !== "POST") return new Response("Bot activo");
 
     try {
       const data = await request.json();
 
-      // Mensajes de Telegram
+      // 🔹 Mensajes de texto
       if (data.message) {
         const chat_id = data.message.chat.id;
         const text = data.message.text || "";
+        const user_id = data.message.from.id;
 
-        // Detectamos /start
-        if (text === "/start") {
-          // 1️⃣ Enviar mensaje de hola
+        // 🔹 Comando /start
+        if (text.toLowerCase() === "/start") {
+          // Mensaje inicial
           await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               chat_id: chat_id,
-              text: "👋 Hola! Generando tu QR de pago..."
+              text: "👋 ¡Hola! Para inscribirte al torneo, realiza tu pago por transferencia bancaria."
             })
           });
 
-          // 2️⃣ Crear preferencia en Mercado Pago (QR)
+          // Crear preferencia en Mercado Pago
+          const preferenceData = {
+            items: [
+              {
+                title: "Inscripción Torneo",
+                quantity: 1,
+                unit_price: 1000 // Cambiar monto según tu torneo
+              }
+            ],
+            payer: {
+              email: "user@example.com" // Opcional: puedes usar un email ficticio
+            },
+            payment_methods: {
+              excluded_payment_types: [{ id: "credit_card" }], // Excluye tarjeta
+              installments: 1
+            },
+            external_reference: `user_${user_id}_torneo_1` // Identificador único
+          };
+
           const mpResponse = await fetch("https://api.mercadopago.com/checkout/preferences", {
             method: "POST",
             headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${MP_ACCESS_TOKEN}`
+              "Authorization": `Bearer ${MP_ACCESS_TOKEN}`,
+              "Content-Type": "application/json"
             },
-            body: JSON.stringify({
-              items: [
-                {
-                  title: "Inscripción Torneo",
-                  quantity: 1,
-                  currency_id: "ARS",
-                  unit_price: 1000
-                }
-              ],
-              payment_methods: {
-                excluded_payment_types: [
-                  { id: "credit_card" }  // Evitamos tarjeta
-                ],
-                installments: 1
-              },
-              back_urls: {
-                success: "https://tusitio.com/success",
-                failure: "https://tusitio.com/failure",
-                pending: "https://tusitio.com/pending"
-              },
-              auto_return: "approved"
-            })
+            body: JSON.stringify(preferenceData)
           });
 
           const mpData = await mpResponse.json();
 
-          // 3️⃣ Obtener QR (el link del QR se genera en init_point)
-          const qr_url = mpData.init_point;
-
-          // 4️⃣ Enviar QR como link o imagen
-          // Telegram no puede mostrar init_point como imagen directamente,
-          // pero podemos enviarlo como mensaje con link
+          // Enviar link del checkout al usuario
           await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               chat_id: chat_id,
-              text: `Escanea tu QR o toca el link para pagar:\n${qr_url}`
+              text: `💳 Haz tu pago mediante transferencia bancaria usando este link:\n${mpData.init_point}`
             })
           });
 
@@ -80,6 +73,7 @@ export default {
 
       return new Response("ok");
     } catch (err) {
+      console.log("Error:", err);
       return new Response("Error: " + err.message);
     }
   }
