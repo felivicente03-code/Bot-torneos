@@ -6,12 +6,13 @@ const ADMIN_CHAT_ID = "8581898801";
 const CBU = "0000003100079795148802";
 const ALIAS = "felipeelgoat.mp";
 
+
 export default {
   async fetch(request) {
 
     const url = new URL(request.url);
 
-    // WEBHOOK TELEGRAM
+    // TELEGRAM WEBHOOK
     if (request.method === "POST") {
 
       const data = await request.json();
@@ -29,7 +30,7 @@ export default {
             body: JSON.stringify({
               chat_id: chat_id,
               text:
-`💳 Para inscribirte realiza una transferencia:
+`💳 Transferí para inscribirte:
 
 CBU:
 ${CBU}
@@ -37,7 +38,7 @@ ${CBU}
 Alias:
 ${ALIAS}
 
-Cuando el pago llegue lo detectaremos automáticamente.`
+Cuando el pago llegue se detectará automáticamente.`
             })
           });
 
@@ -48,7 +49,7 @@ Cuando el pago llegue lo detectaremos automáticamente.`
       return new Response("ok");
     }
 
-    // ENDPOINT PARA REVISAR PAGOS
+    // CONSULTAR PAGOS
     if (url.pathname === "/check") {
 
       const res = await fetch(
@@ -62,35 +63,22 @@ Cuando el pago llegue lo detectaremos automáticamente.`
 
       const data = await res.json();
 
-      if (!data.results) {
-        return new Response("sin pagos");
-      }
+      const mensaje =
+`📊 RESPUESTA COMPLETA MERCADO PAGO
 
-      for (const pago of data.results) {
-
-        if (pago.status === "approved") {
-
-          const mensaje =
-`💰 PAGO RECIBIDO
-
-${JSON.stringify(pago, null, 2)}
+${JSON.stringify(data, null, 2)}
 `;
 
-          await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: ADMIN_CHAT_ID,
-              text: mensaje
-            })
-          });
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: ADMIN_CHAT_ID,
+          text: mensaje
+        })
+      });
 
-          break;
-        }
-
-      }
-
-      return new Response("check completado");
+      return new Response("debug enviado");
     }
 
     return new Response("bot activo");
