@@ -63,22 +63,24 @@ Cuando el pago llegue se detectará automáticamente.`
 
   const data = await res.json();
 
-  const mensaje =
-`📊 RESPUESTA MERCADO PAGO
+  const texto = JSON.stringify(data, null, 2);
 
-${JSON.stringify(data).slice(0,3500)}
-`;
+  const partes = texto.match(/[\s\S]{1,3500}/g);
 
-  await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: ADMIN_CHAT_ID,
-      text: mensaje
-    })
-  });
+  for (const parte of partes) {
 
-  return new Response("debug enviado");
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: ADMIN_CHAT_ID,
+        text: parte
+      })
+    });
+
+  }
+
+  return new Response("json enviado");
 }
 
     return new Response("bot activo");
