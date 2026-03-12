@@ -1,7 +1,6 @@
 const TOKEN = "8750689884:AAGX4mL-lUxs-5zEbgONWvyzFW6bXDiJB3A";
 const MP_ACCESS_TOKEN = "APP_USR-4428056520434568-030317-d98e43dabb9342447235c8b040971678-2127284765";
 
-
 export default {
 async fetch(request, env) {
 
@@ -27,7 +26,7 @@ console.log("Mensaje Telegram:", text, "Usuario:", chat_id);
 
 if (text === "/start") {
 
-const cantidad = await env.DB.prepare(`
+const cantidad = await env.torneos_db.prepare(`
 SELECT COUNT(*) as total FROM PAGOS
 `).first();
 
@@ -38,7 +37,7 @@ const monto = (20 + numero * 0.01).toFixed(2);
 console.log("Cantidad jugadores:", numero);
 console.log("Monto asignado:", monto);
 
-await env.DB.prepare(`
+await env.torneos_db.prepare(`
 INSERT INTO PAGOS (telegram_id, monto, pagado)
 VALUES (?, ?, 0)
 `).bind(chat_id, monto).run();
@@ -63,7 +62,7 @@ if (text === "si") {
 
 console.log("Usuario dice que pagó");
 
-const jugador = await env.DB.prepare(`
+const jugador = await env.torneos_db.prepare(`
 SELECT telegram_id, monto
 FROM PAGOS
 WHERE telegram_id = ?
@@ -123,7 +122,7 @@ return new Response("ok");
 
 console.log("Pago encontrado:", pagoEncontrado.id);
 
-await env.DB.prepare(`
+await env.torneos_db.prepare(`
 UPDATE PAGOS
 SET pagado = 1
 WHERE telegram_id = ?
