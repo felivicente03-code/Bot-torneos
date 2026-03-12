@@ -19,7 +19,7 @@ export default {
 
         if (data.message.text === "/start") {
           // Contar cuántos registros hay en PAGOS
-          const count = await env.d1.prepare(`SELECT COUNT(*) AS total FROM PAGOS`).first();
+          //const count = await env.d1.prepare(`SELECT COUNT(*) AS total FROM PAGOS`).first();
           const numeroJugador = count.total || 0;
 
           const centavos = numeroJugador % 100;
