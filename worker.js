@@ -75,7 +75,7 @@ export default {
       // -------------------
       // WEBHOOK MERCADO PAGO
       // -------------------
-      if (data.type === "payment") {
+      if (data.type === "payment" || data.action === "payment.created" || data.action === "payment.updated") {
 
         const payment_id = data.data.id;
 
