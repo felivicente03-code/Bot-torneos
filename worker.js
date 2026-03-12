@@ -11,7 +11,7 @@ export default {
 
       const data = await request.json();
 
-      // -------------------
+      // ------------------
       // MENSAJES TELEGRAM
       // ------------------
       if (data.message) {
