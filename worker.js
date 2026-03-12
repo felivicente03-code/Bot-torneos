@@ -1,186 +1,166 @@
 const TOKEN = "8750689884:AAGX4mL-lUxs-5zEbgONWvyzFW6bXDiJB3A";
 const MP_ACCESS_TOKEN = "APP_USR-4428056520434568-030317-d98e43dabb9342447235c8b040971678-2127284765";
-const MONTO_BASE = 20;
+
 
 export default {
-  async fetch(request, env) {
+async fetch(request, env) {
 
-    if (request.method !== "POST") return new Response("Bot activo");
+if (request.method !== "POST") {
+return new Response("Bot activo");
+}
 
-    try {
+const data = await request.json();
 
-      const data = await request.json();
+console.log("JSON recibido:", JSON.stringify(data));
 
-      // LOG 1 — ver todo el JSON recibido
-      console.log("JSON recibido:", JSON.stringify(data));
+if (data.message) {
 
-      // ------------------
-      // MENSAJES TELEGRAM
-      // ------------------
-      if (data.message) {
+const chat_id = data.message.chat.id;
+const text = (data.message.text || "").toLowerCase();
 
-        const chat_id = data.message.chat.id;
-        const text = data.message.text || "";
-        const user_id = data.message.from.id;
-        const nombre = data.message.from.first_name || "Jugador";
+console.log("Mensaje Telegram:", text, "Usuario:", chat_id);
 
-        console.log("Mensaje Telegram:", text, "Usuario:", user_id);
 
-        if (text === "/start") {
+// ===============================
+// START
+// ===============================
 
-          let numeroJugador = 0;
+if (text === "/start") {
 
-          try {
+const cantidad = await env.DB.prepare(`
+SELECT COUNT(*) as total FROM PAGOS
+`).first();
 
-            const count = await env.torneos_db
-              .prepare(`SELECT COUNT(*) AS total FROM PAGOS`)
-              .first();
+const numero = cantidad.total + 1;
 
-            numeroJugador = count.total || 0;
+const monto = (20 + numero * 0.01).toFixed(2);
 
-            console.log("Cantidad jugadores:", numeroJugador);
+console.log("Cantidad jugadores:", numero);
+console.log("Monto asignado:", monto);
 
-          } catch (e) {
-            console.log("Error contando jugadores:", e);
-          }
+await env.DB.prepare(`
+INSERT INTO PAGOS (telegram_id, monto, pagado)
+VALUES (?, ?, 0)
+`).bind(chat_id, monto).run();
 
-          const centavos = numeroJugador % 100;
-          const pesosExtra = Math.floor(numeroJugador / 100);
+console.log("Jugador guardado en D1");
 
-          const monto_unico =
-            (MONTO_BASE + pesosExtra + centavos / 100).toFixed(2);
+await enviarTelegram(
+chat_id,
+`Tu inscripción cuesta $${monto}\n\nTransfiere ese monto a Mercado Pago.\n\nCuando pagues escribe: si`
+);
 
-          console.log("Monto asignado:", monto_unico);
+return new Response("ok");
 
-          try {
+}
 
-            await env.torneos_db.prepare(`
-              INSERT INTO PAGOS (telegram_id, monto, pagado)
-              VALUES (?, ?, 0)
-            `).bind(user_id, parseFloat(monto_unico)).run();
 
-            console.log("Jugador guardado en D1");
+// ===============================
+// CONFIRMAR PAGO
+// ===============================
 
-          } catch (e) {
-            console.log("Error insertando jugador:", e);
-          }
+if (text === "si") {
 
-          await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+console.log("Usuario dice que pagó");
 
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+const jugador = await env.DB.prepare(`
+SELECT telegram_id, monto
+FROM PAGOS
+WHERE telegram_id = ?
+AND pagado = 0
+`).bind(chat_id).first();
 
-            body: JSON.stringify({
-              chat_id,
-              text: `Hola ${nombre}\nTu monto único es: $${monto_unico}`
-            })
+if (!jugador) {
 
-          });
+await enviarTelegram(chat_id, "No tienes pagos pendientes.");
+return new Response("ok");
 
-          return new Response("ok");
-        }
+}
 
-        return new Response("ok");
-      }
+const monto = parseFloat(jugador.monto);
 
-      // -------------------
-      // WEBHOOK MERCADO PAGO
-      // -------------------
-      if (
-        data.type === "payment" ||
-        data.action === "payment.created" ||
-        data.action === "payment.updated"
-      ) {
+console.log("Buscando pago de:", monto);
 
-        console.log("Evento Mercado Pago detectado");
+const mp = await fetch(
+"https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=10",
+{
+headers: {
+Authorization: `Bearer ${MP_ACCESS_TOKEN}`
+}
+}
+);
 
-        const payment_id = data.data.id;
+const pagos = await mp.json();
 
-        console.log("Payment ID:", payment_id);
+console.log("Pagos recibidos:", JSON.stringify(pagos));
 
-        const mp = await fetch(
-          `https://api.mercadopago.com/v1/payments/${payment_id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${MP_ACCESS_TOKEN}`
-            }
-          }
-        );
+let pagoEncontrado = null;
 
-        const payment = await mp.json();
+for (const p of pagos.results) {
 
-        // LOG pago completo
-        console.log("Pago completo:", JSON.stringify(payment));
+if (
+p.status === "approved" &&
+Math.abs(p.transaction_amount - monto) < 0.01
+) {
+pagoEncontrado = p;
+break;
+}
 
-        // Verificar que el pago esté aprobado
-        if (payment.status !== "approved") {
-          console.log("Pago no aprobado todavía:", payment.status);
-          return new Response("Pago no aprobado");
-        }
+}
 
-        let montoRecibido = payment.transaction_amount;
+if (!pagoEncontrado) {
 
-        console.log("Monto recibido raw:", montoRecibido);
+console.log("Pago no encontrado todavía");
 
-        // soporta coma o punto
-        if (typeof montoRecibido === "string") {
-          montoRecibido = montoRecibido.replace(",", ".");
-        }
+await enviarTelegram(
+chat_id,
+"Aún no veo tu pago. Espera unos segundos y escribe 'si' nuevamente."
+);
 
-        montoRecibido = parseFloat(montoRecibido);
+return new Response("ok");
 
-        console.log("Monto convertido:", montoRecibido);
+}
 
-        // Buscar jugador en D1
-        const jugador = await env.torneos_db.prepare(`
-          SELECT telegram_id, monto
-          FROM PAGOS
-          WHERE ABS(monto - ?) < 0.01
-          AND pagado = 0
-          LIMIT 1
-        `).bind(montoRecibido).first();
+console.log("Pago encontrado:", pagoEncontrado.id);
 
-        console.log("Jugador encontrado:", jugador);
+await env.DB.prepare(`
+UPDATE PAGOS
+SET pagado = 1
+WHERE telegram_id = ?
+`).bind(chat_id).run();
 
-        if (jugador) {
+await enviarTelegram(
+chat_id,
+"✅ Pago confirmado. Estás inscrito en el torneo."
+);
 
-          await env.torneos_db.prepare(`
-            UPDATE PAGOS
-            SET pagado = 1
-            WHERE telegram_id = ?
-            AND ABS(monto - ?) < 0.01
-          `).bind(jugador.telegram_id, montoRecibido).run();
+return new Response("ok");
 
-          console.log("Pago marcado como pagado");
+}
 
-          await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+}
 
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+return new Response("ok");
 
-            body: JSON.stringify({
-              chat_id: jugador.telegram_id,
-              text: `✅ Pago recibido\nMonto: $${montoRecibido}\nInscripción confirmada`
-            })
-
-          });
-
-          console.log("Mensaje enviado a Telegram");
-        } else {
-
-          console.log("No se encontró jugador con ese monto");
-        }
-
-        return new Response("ok");
-      }
-
-      return new Response("ok");
-
-    } catch (err) {
-
-      console.log("Error general:", err);
-
-      return new Response("Error: " + err.message);
-    }
-  }
+}
 };
+
+
+// ===============================
+// ENVIAR MENSAJE TELEGRAM
+// ===============================
+
+async function enviarTelegram(chat_id, texto) {
+
+await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+chat_id: chat_id,
+text: texto
+})
+});
+
+}
