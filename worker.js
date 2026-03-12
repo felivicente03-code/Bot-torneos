@@ -66,7 +66,7 @@ export default {
       // -------------------
       if (data.type === "payment") {
         const payment = data.data;
-        const montoRecibido = parseFloat(payment.transaction_amount);
+        const montoRecibido = parseFloat(String(payment.transaction_amount).replace(",", "."));
 
         // Buscar jugador con ese monto que no haya pagado
         const jugador = await env.d1.prepare(`
