@@ -1,6 +1,6 @@
 const TOKEN = "8750689884:AAGX4mL-lUxs-5zEbgONWvyzFW6bXDiJB3A";
 const MP_ACCESS_TOKEN = "APP_USR-4428056520434568-030317-d98e43dabb9342447235c8b040971678-2127284765";
-const MONTO_BASE = 20; // monto base para prueba
+const MONTO_BASE = 20; // monto base
 
 export default {
   async fetch(request, env) {
