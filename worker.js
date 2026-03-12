@@ -13,7 +13,7 @@ export default {
 
       // -------------------
       // MENSAJES TELEGRAM
-      // -------------------
+      // ------------------
       if (data.message) {
 
         const chat_id = data.message.chat.id;
