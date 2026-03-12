@@ -19,7 +19,7 @@ export default {
           // Contar jugadores en PAGOS
           let numeroJugador = 0;
           try {
-            const count = await env.d1.prepare(`SELECT COUNT(*) AS total FROM PAGOS`).first();
+            const count = await env.torneos_db.prepare(`SELECT COUNT(*) AS total FROM PAGOS`).first();
             numeroJugador = count.total || 0;
           } catch (e) {
             console.log("Error al contar jugadores, se usará 0:", e);
@@ -31,7 +31,7 @@ export default {
 
           // Guardar en D1
           try {
-            await env.d1.prepare(`
+            await env.torneos_db.prepare(`
               INSERT INTO PAGOS (telegram_id, monto, pagado)
               VALUES (?, ?, 0)
             `).bind(user_id, parseFloat(monto_unico)).run();
@@ -55,7 +55,7 @@ export default {
         // ---------- Confirmación de pago ----------
         if (text === "si") {
           // Buscar el último registro del jugador que no esté pagado
-          const jugador = await env.d1.prepare(`
+          const jugador = await env.torneos_db.prepare(`
             SELECT telegram_id, monto, pagado FROM PAGOS
             WHERE telegram_id = ? AND pagado = 0
             ORDER BY monto DESC
@@ -64,7 +64,7 @@ export default {
 
           if (jugador) {
             // Marcar como pagado
-            await env.d1.prepare(`
+            await env.torneos_db.prepare(`
               UPDATE PAGOS SET pagado = 1
               WHERE telegram_id = ? AND monto = ?
             `).bind(user_id, jugador.monto).run();
