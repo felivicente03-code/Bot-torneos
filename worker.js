@@ -11,6 +11,9 @@ export default {
 
       const data = await request.json();
 
+      // LOG 1 — ver todo el JSON recibido
+      console.log("JSON recibido:", JSON.stringify(data));
+
       // ------------------
       // MENSAJES TELEGRAM
       // ------------------
@@ -20,6 +23,8 @@ export default {
         const text = data.message.text || "";
         const user_id = data.message.from.id;
         const nombre = data.message.from.first_name || "Jugador";
+
+        console.log("Mensaje Telegram:", text, "Usuario:", user_id);
 
         if (text === "/start") {
 
@@ -33,6 +38,8 @@ export default {
 
             numeroJugador = count.total || 0;
 
+            console.log("Cantidad jugadores:", numeroJugador);
+
           } catch (e) {
             console.log("Error contando jugadores:", e);
           }
@@ -43,12 +50,16 @@ export default {
           const monto_unico =
             (MONTO_BASE + pesosExtra + centavos / 100).toFixed(2);
 
+          console.log("Monto asignado:", monto_unico);
+
           try {
 
             await env.torneos_db.prepare(`
               INSERT INTO PAGOS (telegram_id, monto, pagado)
               VALUES (?, ?, 0)
             `).bind(user_id, parseFloat(monto_unico)).run();
+
+            console.log("Jugador guardado en D1");
 
           } catch (e) {
             console.log("Error insertando jugador:", e);
@@ -75,11 +86,18 @@ export default {
       // -------------------
       // WEBHOOK MERCADO PAGO
       // -------------------
-      if (data.type === "payment" || data.action === "payment.created" || data.action === "payment.updated") {
+      if (
+        data.type === "payment" ||
+        data.action === "payment.created" ||
+        data.action === "payment.updated"
+      ) {
+
+        console.log("Evento Mercado Pago detectado");
 
         const payment_id = data.data.id;
 
-        // Pedimos info real del pago
+        console.log("Payment ID:", payment_id);
+
         const mp = await fetch(
           `https://api.mercadopago.com/v1/payments/${payment_id}`,
           {
@@ -91,7 +109,18 @@ export default {
 
         const payment = await mp.json();
 
+        // LOG pago completo
+        console.log("Pago completo:", JSON.stringify(payment));
+
+        // Verificar que el pago esté aprobado
+        if (payment.status !== "approved") {
+          console.log("Pago no aprobado todavía:", payment.status);
+          return new Response("Pago no aprobado");
+        }
+
         let montoRecibido = payment.transaction_amount;
+
+        console.log("Monto recibido raw:", montoRecibido);
 
         // soporta coma o punto
         if (typeof montoRecibido === "string") {
@@ -100,21 +129,29 @@ export default {
 
         montoRecibido = parseFloat(montoRecibido);
 
-        // Buscar en tabla
+        console.log("Monto convertido:", montoRecibido);
+
+        // Buscar jugador en D1
         const jugador = await env.torneos_db.prepare(`
           SELECT telegram_id, monto
           FROM PAGOS
-          WHERE monto = ? AND pagado = 0
+          WHERE ABS(monto - ?) < 0.01
+          AND pagado = 0
           LIMIT 1
         `).bind(montoRecibido).first();
+
+        console.log("Jugador encontrado:", jugador);
 
         if (jugador) {
 
           await env.torneos_db.prepare(`
             UPDATE PAGOS
             SET pagado = 1
-            WHERE telegram_id = ? AND monto = ?
+            WHERE telegram_id = ?
+            AND ABS(monto - ?) < 0.01
           `).bind(jugador.telegram_id, montoRecibido).run();
+
+          console.log("Pago marcado como pagado");
 
           await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
 
@@ -128,6 +165,10 @@ export default {
 
           });
 
+          console.log("Mensaje enviado a Telegram");
+        } else {
+
+          console.log("No se encontró jugador con ese monto");
         }
 
         return new Response("ok");
@@ -137,10 +178,9 @@ export default {
 
     } catch (err) {
 
-      console.log("Error:", err);
+      console.log("Error general:", err);
 
       return new Response("Error: " + err.message);
-
     }
   }
 };
