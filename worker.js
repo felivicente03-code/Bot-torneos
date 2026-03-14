@@ -170,10 +170,15 @@ await env.torneos_db.prepare(
               body: JSON.stringify({
                 chat_id: chat_id,
                 text: `Perfecto ${jugador_existente.nick}!!!
+💳 ¿Cómo quieres pagar?
 
-💳 Paga tu inscripción aquí:
-
-${link_pago}`
+Elige una opción:`,
+reply_markup: {
+inline_keyboard: [
+[{ text: "💳 Tengo Mercado Pago", callback_data: "pagar_mp" }],
+[{ text: "🏦 Transferencia", callback_data: "pagar_transferencia" }]
+]
+}
               })
             });
 
@@ -334,11 +339,15 @@ await env.torneos_db.prepare(
               chat_id: chat_id,
               text: `✅ Registro completado
 
-💳 Para confirmar tu lugar paga aquí:
+💳 ¿Cómo quieres pagar?
 
-${link_pago}
-
-Cuando el pago se confirme quedarás inscrito.`,
+Elige una opción:`,
+reply_markup: {
+inline_keyboard: [
+[{ text: "💳 Tengo Mercado Pago", callback_data: "pagar_mp" }],
+[{ text: "🏦 Transferencia", callback_data: "pagar_transferencia" }]
+]
+}
               reply_markup: { remove_keyboard: true }
             })
           });
@@ -377,6 +386,92 @@ Cuando el pago se confirme quedarás inscrito.`,
           "INSERT OR REPLACE INTO estados (telegram_id, paso, torneo_id) VALUES (?, ?, ?)"
         ).bind(user_id, 1, torneo_id).run();
       }
+if (callback_data === "pagar_mp") {
+
+const torneo = await env.torneos_db.prepare(
+"SELECT precio FROM torneos WHERE id = (SELECT torneo_id FROM estados WHERE telegram_id = ?)"
+).bind(user_id).first();
+
+const pago = await fetch("https://api.mercadopago.com/checkout/preferences", {
+method: "POST",
+headers: {
+"Content-Type": "application/json",
+"Authorization": `Bearer ${MP_ACCESS_TOKEN}`
+},
+body: JSON.stringify({
+items: [
+{
+title: "Inscripción Torneo",
+quantity: 1,
+unit_price: torneo.precio
+}
+],
+metadata: {
+telegram_id: user_id
+},
+notification_url: "https://bot-torneos.felivicente03.workers.dev"
+})
+});
+
+const pagoData = await pago.json();
+const link_pago = pagoData.init_point;
+
+await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({
+chat_id: chat_id,
+text: `💳 Paga aquí:
+
+${link_pago}`
+})
+});
+
+return new Response("ok");
+}
+if (callback_data === "pagar_mp") {
+
+const torneo = await env.torneos_db.prepare(
+"SELECT precio FROM torneos WHERE id = (SELECT torneo_id FROM estados WHERE telegram_id = ?)"
+).bind(user_id).first();
+
+const pago = await fetch("https://api.mercadopago.com/checkout/preferences", {
+method: "POST",
+headers: {
+"Content-Type": "application/json",
+"Authorization": `Bearer ${MP_ACCESS_TOKEN}`
+},
+body: JSON.stringify({
+items: [
+{
+title: "Inscripción Torneo",
+quantity: 1,
+unit_price: torneo.precio
+}
+],
+metadata: {
+telegram_id: user_id
+},
+notification_url: "https://bot-torneos.felivicente03.workers.dev"
+})
+});
+
+const pagoData = await pago.json();
+const link_pago = pagoData.init_point;
+
+await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({
+chat_id: chat_id,
+text: `💳 Paga aquí:
+
+${link_pago}`
+})
+});
+
+return new Response("ok");
+}
     }
 
     return new Response("ok");
