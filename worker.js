@@ -1,4 +1,5 @@
-const TOKEN = "8750689884:AAGX4mL-lUxs-5zEbgONWvyzFW6bXDiJB3A";
+INSERT OR REPLACE INTO jugadores (id_juego, nick, apellido, nombre, pais)
+VALUES (?, ?, ?, ?, ?)const TOKEN = "8750689884:AAGX4mL-lUxs-5zEbgONWvyzFW6bXDiJB3A";
 const MP_ACCESS_TOKEN = "APP_USR-4428056520434568-030317-d98e43dabb9342447235c8b040971678-2127284765";
 
 
@@ -123,12 +124,14 @@ if (data.type === "payment") {
 
         // Crear inscripción
         await env.torneos_db.prepare(
-       `INSERT INTO inscripciones (telegram_id, torneo_id, monto, metodo, estado)
-        VALUES (?, ?, ?, ?, ?)`
+       `INSERT INTO inscripciones (telegram_id, torneo_id, id_juego, nick, monto, metodo, estado)
+VALUES (?, ?, ?, ?, ?, ?, ?)`
         ).bind(
         user_id,
-       estado.torneo_id,
-       torneo.precio,
+estado.torneo_id,
+text,
+jugador_existente.nick,
+torneo.precio,
        "link",
        "esperando_pago"
        ).run();
@@ -270,7 +273,6 @@ ${link_pago}`
           await env.torneos_db.prepare(
             "INSERT OR REPLACE INTO jugadores (telegram_id, id_juego, nick, apellido, nombre, pais) VALUES (?, ?, ?, ?, ?, ?)"
           ).bind(
-            user_id,
             datos.id_juego,
             datos.nick,
             datos.apellido,
@@ -284,11 +286,13 @@ const torneo = await env.torneos_db.prepare(
 
 // Crear inscripción
 await env.torneos_db.prepare(
-`INSERT INTO inscripciones (telegram_id, torneo_id, monto, metodo, estado)
-VALUES (?, ?, ?, ?, ?)`
+`INSERT INTO inscripciones (telegram_id, torneo_id, id_juego, nick, monto, metodo, estado)
+VALUES (?, ?, ?, ?, ?, ?, ?)`
 ).bind(
 user_id,
 datos.torneo_id,
+datos.id_juego,
+datos.nick,
 torneo.precio,
 "link",
 "esperando_pago"
