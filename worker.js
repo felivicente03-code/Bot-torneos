@@ -270,15 +270,14 @@ ${link_pago}`
 
           // Inserto en jugadores (evito errores con OR REPLACE)
           await env.torneos_db.prepare(
-            "INSERT OR REPLACE INTO jugadores (id_juego, nick, apellido, nombre, pais)
-VALUES (?, ?, ?, ?, ?)"
-          ).bind(
-            datos.id_juego,
-            datos.nick,
-            datos.apellido,
-            datos.nombre,
-            "Argentina"
-          ).run();
+"INSERT OR REPLACE INTO jugadores (id_juego, nick, apellido, nombre, pais) VALUES (?, ?, ?, ?, ?)"
+).bind(
+datos.id_juego,
+datos.nick,
+datos.apellido,
+datos.nombre,
+"Argentina"
+).run();
 // Obtener torneo
 const torneo = await env.torneos_db.prepare(
 "SELECT precio FROM torneos WHERE id = ?"
