@@ -1,5 +1,4 @@
-INSERT OR REPLACE INTO jugadores (id_juego, nick, apellido, nombre, pais)
-VALUES (?, ?, ?, ?, ?)const TOKEN = "8750689884:AAGX4mL-lUxs-5zEbgONWvyzFW6bXDiJB3A";
+const TOKEN = "8750689884:AAGX4mL-lUxs-5zEbgONWvyzFW6bXDiJB3A";
 const MP_ACCESS_TOKEN = "APP_USR-4428056520434568-030317-d98e43dabb9342447235c8b040971678-2127284765";
 
 
@@ -271,7 +270,8 @@ ${link_pago}`
 
           // Inserto en jugadores (evito errores con OR REPLACE)
           await env.torneos_db.prepare(
-            "INSERT OR REPLACE INTO jugadores (telegram_id, id_juego, nick, apellido, nombre, pais) VALUES (?, ?, ?, ?, ?, ?)"
+            "INSERT OR REPLACE INTO jugadores (id_juego, nick, apellido, nombre, pais)
+VALUES (?, ?, ?, ?, ?)"
           ).bind(
             datos.id_juego,
             datos.nick,
