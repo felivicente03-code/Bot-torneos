@@ -333,24 +333,23 @@ await env.torneos_db.prepare(
 
           // Envío mensaje de registro completado
           await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chat_id,
-              text: `✅ Registro completado
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    chat_id: chat_id,
+    text: `✅ Registro completado
 
 💳 ¿Cómo quieres pagar?
 
 Elige una opción:`,
-reply_markup: {
-inline_keyboard: [
-[{ text: "💳 Tengo Mercado Pago", callback_data: "pagar_mp" }],
-[{ text: "🏦 Transferencia", callback_data: "pagar_transferencia" }]
-]
-}
-              reply_markup: { remove_keyboard: true }
-            })
-          });
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: "💳 Tengo Mercado Pago", callback_data: "pagar_mp" }],
+        [{ text: "🏦 Transferencia", callback_data: "pagar_transferencia" }]
+      ]
+    }
+  })
+});
 
           return new Response("ok");
         }
@@ -429,44 +428,34 @@ ${link_pago}`
 
 return new Response("ok");
 }
-if (callback_data === "pagar_mp") {
+if (callback_data === "pagar_transferencia") {
 
 const torneo = await env.torneos_db.prepare(
 "SELECT precio FROM torneos WHERE id = (SELECT torneo_id FROM estados WHERE telegram_id = ?)"
 ).bind(user_id).first();
 
-const pago = await fetch("https://api.mercadopago.com/checkout/preferences", {
-method: "POST",
-headers: {
-"Content-Type": "application/json",
-"Authorization": `Bearer ${MP_ACCESS_TOKEN}`
-},
-body: JSON.stringify({
-items: [
-{
-title: "Inscripción Torneo",
-quantity: 1,
-unit_price: torneo.precio
-}
-],
-metadata: {
-telegram_id: user_id
-},
-notification_url: "https://bot-torneos.felivicente03.workers.dev"
-})
-});
+const cantidad = await env.torneos_db.prepare(
+"SELECT COUNT(*) as total FROM inscripciones"
+).first();
 
-const pagoData = await pago.json();
-const link_pago = pagoData.init_point;
+const monto_unico = torneo.precio + (cantidad.total * 0.01);
+
+await env.torneos_db.prepare(
+"UPDATE inscripciones SET monto_unico = ? WHERE telegram_id = ?"
+).bind(monto_unico, user_id).run();
 
 await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
 method: "POST",
 headers: { "Content-Type": "application/json" },
 body: JSON.stringify({
 chat_id: chat_id,
-text: `💳 Paga aquí:
+text: `🏦 Haz una transferencia por:
 
-${link_pago}`
+$${monto_unico.toFixed(2)}
+
+Cuando pagues escribe:
+
+si`
 })
 });
 
